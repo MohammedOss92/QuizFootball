@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:layout_margin="24dp"
+    android:background="@drawable/grid_item_bg"
+    android:backgroundTint="#D9000000"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <!-- أيقونة الويكيبيديا أو التيشيرت -->
+<ImageView
+android:id="@+id/ivDialogIcon"
+android:layout_width="90dp"
+android:layout_height="90dp"
+android:layout_gravity="center"
+android:layout_marginTop="10dp"
+android:src="@drawable/wikipedia" />
+
+    <!-- نص المعلومة القادم ديناميكياً من الـ DB -->
+<TextView
+android:id="@+id/tvDialogMessage"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:layout_marginTop="16dp"
+android:layout_marginBottom="16dp"
+android:gravity="center"
+android:text="تأسس النادي..."
+android:textColor="#FFFFFF"
+android:textSize="20sp"
+android:textStyle="bold" />
+
+    <!-- زر التأكيد والإغلاق المماثل لتطبيقك -->
+<Button
+android:id="@+id/btnOk"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:layout_gravity="center"
+android:backgroundTint="#2C2C2C"
+android:paddingStart="40dp"
+android:paddingEnd="40dp"
+android:text="OK!"
+android:textColor="#FFFFFF"
+android:textSize="18sp"
+android:textStyle="bold" />
+
+    </LinearLayout>

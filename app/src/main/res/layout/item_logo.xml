@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- جعلنا الحاوية الخارجية wrap_content لتأخذ حجم العناصر الفعلي فقط داخل الشبكة -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:layout_gravity="center"
+        android:background="@drawable/logo_grid_selector"> <!-- أضفنا الـ selector القديم هنا ليظهر التحديد خلف الصورة -->
+
+        <!-- 1. الشعار / علامة الاستفهام (أعدنا الأبعاد إلى 55dp لتكون متناسقة ومقاربة للقديم 50dp) -->
+        <ImageView
+            android:id="@+id/ivLogoImage"
+            android:layout_width="55dp"
+            android:layout_height="55dp"
+            android:scaleType="fitCenter"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- 2. أيقونة الصح الخضراء (أعدنا حجمها إلى 17dp وموضعها إلى يمين الشعار تماماً كالتصميم القديم) -->
+        <ImageView
+            android:id="@+id/ivCheckSolved"
+            android:layout_width="17dp"
+            android:layout_height="17dp"
+            android:src="@drawable/right"
+            android:visibility="gone"
+            android:scaleType="fitXY"
+            app:layout_constraintTop_toTopOf="@id/ivLogoImage"
+            app:layout_constraintStart_toEndOf="@id/ivLogoImage"
+            android:layout_marginStart="-6dp"
+            android:layout_marginTop="-2dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>
