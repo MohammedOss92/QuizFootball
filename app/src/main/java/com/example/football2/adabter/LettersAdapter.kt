@@ -77,6 +77,15 @@ class LettersAdapter(
         notifyDataSetChanged()
     }
 
+    fun findPositionOfLetter(letter: Char): Int {
+        for (i in letters.indices) {
+            if (letters[i] == letter && !hiddenPositions.contains(i)) {
+                return i
+            }
+        }
+        return -1
+    }
+
     private class ViewHolder(val tvLetter: TextView)
 
     /**

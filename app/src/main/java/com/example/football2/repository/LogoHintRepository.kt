@@ -45,4 +45,77 @@ class LogoHintRepository(private val logoHintDao: LogoHintDao) {
             logoHintDao.insertOrReplaceLogoHint(newState)
         }
     }
+
+    suspend fun revealOneLetter(logoId: Int) {
+        val currentState = logoHintDao.getHintStateForLogo(logoId)
+        val currentLetterCount = currentState?.letter ?: 0
+
+        if (currentState != null) {
+            val updatedState = currentState.copy(letter = currentLetterCount + 1)
+            logoHintDao.insertOrReplaceLogoHint(updatedState)
+        } else {
+            val newState = LogoHintEntity(
+                id = null,
+                logoId = logoId,
+                facebook = 0,
+                twitter = 0,
+                info = 0,
+                hide = 0,
+                letter = 1, // كشف أول حرف
+                player = 0
+            )
+            logoHintDao.insertOrReplaceLogoHint(newState)
+        }
+    }
+
+    suspend fun revealLe1tterAtPosition(logoId: Int, slotIndex: Int) {
+        val currentState = logoHintDao.getHintStateForLogo(logoId)
+        // نستخدم الحقل letter أو ندمج القناع (Bitmask) أو النص لحفظ الأماكن
+        // إذا كان الحقل letter مخزن كـ Bitmask:
+        val currentMask = currentState?.letter ?: 0
+        val updatedMask = currentMask or (1 shl slotIndex)
+
+        if (currentState != null) {
+            val updatedState = currentState.copy(letter = updatedMask)
+            logoHintDao.insertOrReplaceLogoHint(updatedState)
+        } else {
+            val newState = LogoHintEntity(
+                id = null,
+                logoId = logoId,
+                facebook = 0,
+                twitter = 0,
+                info = 0,
+                hide = 0,
+                letter = updatedMask,
+                player = 0
+            )
+            logoHintDao.insertOrReplaceLogoHint(newState)
+        }
+    }
+
+    suspend fun revealLetterAtPosition(logoId: Int, slotIndex: Int) {
+        val currentState = logoHintDao.getHintStateForLogo(logoId)
+        val currentMask = currentState?.letter ?: 0
+
+        // 🟢 دمج الحرف الجديد مع الحروف المكتشفة سابقاً باستخدام Bitwise OR
+        val updatedMask = currentMask or (1 shl slotIndex)
+
+        if (currentState != null) {
+            val updatedState = currentState.copy(letter = updatedMask)
+            logoHintDao.insertOrReplaceLogoHint(updatedState)
+        } else {
+
+                val newState = LogoHintEntity(
+                    id = null,
+            logoId = logoId,
+            facebook = 0,
+            twitter = 0,
+            info = 0,
+            hide = 0,
+            letter = updatedMask,
+            player = 0
+            )
+            logoHintDao.insertOrReplaceLogoHint(newState)
+        }
+    }
 }

@@ -78,4 +78,25 @@ class LogoHintViewModel(
             _currentLogoHintState.value = updatedState
         }
     }
+
+    fun unlockLetterHint(logoId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            logoHintRepository.revealOneLetter(logoId)
+            val updatedState = logoHintRepository.getHintStateForLogo(logoId)
+            _currentLogoHintState.value = updatedState
+        }
+    }
+
+
+
+    fun unlockLetterHintAt(logoId: Int, slotIndex: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            // 1. الحفظ في Room DB
+            logoHintRepository.revealLetterAtPosition(logoId, slotIndex)
+
+            // 2. إعادة قراءة الحالة فوراً لتحديث الـ StateFlow / LiveData
+            val updatedState = logoHintRepository.getHintStateForLogo(logoId)
+            _currentLogoHintState.value = updatedState
+        }
+    }
 }
