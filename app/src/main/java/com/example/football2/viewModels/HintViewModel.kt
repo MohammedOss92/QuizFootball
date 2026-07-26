@@ -35,4 +35,8 @@ class HintViewModel(private val hintRepository: HintRepository) : ViewModel() {
             loadCurrentHints()
         }
     }
+
+    fun addHint(amount: Int = 1) {
+        rewardHints(amount)
+    }
 }

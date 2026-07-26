@@ -48,4 +48,11 @@ class LogoHintViewModel(
             gameControlRepository.resetGame()
         }
     }
+
+    fun unlockHideHint(logoId: Int) {
+        viewModelScope.launch {
+            logoHintRepository.updateHideHint(logoId)
+            loadHintStateForLogo(logoId) // إعادة تحميل الحالة لتحديث الـ Flow
+        }
+    }
 }

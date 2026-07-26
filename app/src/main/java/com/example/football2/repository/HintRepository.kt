@@ -21,4 +21,6 @@ class HintRepository(private val hintDao: HintDao) {
     suspend fun addUsedHint() {
         hintDao.addUsedHint()
     }
+
+
 }

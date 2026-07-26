@@ -16,4 +16,8 @@ interface LogoHintDao {
 
     @Query("DELETE FROM logo_hints")
     suspend fun clearLogoHintsTable()
+
+    @Query("UPDATE logo_hints SET lo_hi_hide = 1 WHERE lo_hi_logo = :logoId")
+    suspend fun updateHideHint(logoId: Int)
+
 }

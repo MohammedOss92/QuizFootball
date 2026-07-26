@@ -14,4 +14,8 @@ class LogoHintRepository(private val logoHintDao: LogoHintDao) {
     suspend fun updateFacebookHint(logoHintId: Int) {
         logoHintDao.updateFacebookHint(logoHintId)
     }
+
+    suspend fun updateHideHint(logoId: Int) {
+        logoHintDao.updateHideHint(logoId)
+    }
 }

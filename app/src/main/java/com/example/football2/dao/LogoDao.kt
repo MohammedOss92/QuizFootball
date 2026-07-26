@@ -55,4 +55,7 @@ interface LogoDao {
 
     @Query("UPDATE logos SET lo_tries = 0, lo_points = 0, lo_completed = 0, lo_letter = ''")
     suspend fun resetLogosTable()
+
+    @Query("UPDATE logo_hints SET lo_hi_hide = 1 WHERE lo_hi_logo = :logoId")
+    suspend fun updateHideHint(logoId: Int)
 }
