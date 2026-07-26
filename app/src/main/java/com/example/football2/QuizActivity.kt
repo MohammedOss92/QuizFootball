@@ -37,21 +37,18 @@ class QuizActivity : AppCompatActivity() {
     private var currentLevelId: Int = 0
     private var currentLogo: LogoEntity? = null
 
-    // متغيرات إدارة نظام الحروف والمربعات
     private lateinit var lettersAdapter: LettersAdapter
-    private val answerSlots = ArrayList<TextView?>()          // تتبع مربعات الإجابة العلوية
-    private val slotSourcePositions = HashMap<Int, Int>()     // يربط بين رقم المربع ومكانه في الـ GridView
+    private val answerSlots = ArrayList<TextView?>()
+    private val slotSourcePositions = HashMap<Int, Int>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityQuizBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 1. استقبال المعرفات
         currentLogoId = intent.getIntExtra("LOGO_ID", 0)
         currentLevelId = intent.getIntExtra("LEVEL_ID", 0)
 
-        // 2. تجهيز قاعدة البيانات والـ Repositories
         val database = AppDatabase.getDatabase(this)
         val logoRepo = LogoRepository(database.logoDao())
         val hintRepo = HintRepository(database.hintDao())
@@ -64,7 +61,6 @@ class QuizActivity : AppCompatActivity() {
             database.logoHintDao()
         )
 
-        // 3. بناء الـ ViewModels عبر الـ Factory
         val factory = ViewModelFactory(
             logoRepository = logoRepo,
             hintRepository = hintRepo,
@@ -76,33 +72,25 @@ class QuizActivity : AppCompatActivity() {
         hintViewModel = ViewModelProvider(this, factory)[HintViewModel::class.java]
         logoHintViewModel = ViewModelProvider(this, factory)[LogoHintViewModel::class.java]
 
-        // 4. تحميل البيانات عند فتح الشاشة
         logoViewModel.loadLogosForLevel(currentLevelId)
         hintViewModel.loadCurrentHints()
+
+        // تحميل حالة التلميحات للشعار الحالي
         logoHintViewModel.loadHintStateForLogo(currentLogoId)
 
-        // 5. مراقبة الـ StateFlows
         observeGameStates()
-
-        // 6. إعداد الأحداث
         setupActions()
     }
 
     private fun observeGameStates() {
-        // مراقبة رصيد المساعدات وتحديث شريط العنوان العلوي (مظهر الـ HINTS الأخضر القديم)
+        // 1. مراقبة عداد المساعدات
         lifecycleScope.launch {
             hintViewModel.currentHints.collect { hintsCount ->
-                val tvHintCount = findViewById<TextView>(R.id.scoreValue)
-                val tvHintLabel = findViewById<TextView>(R.id.scoreTitle) // إذا كان موجوداً في الهيدر
-
-                tvHintCount?.text = hintsCount.toString()
-                tvHintCount?.setTextColor(android.graphics.Color.parseColor("#7CB342")) // أخضر فسفوري مطابق للنسخة القديمة
-                tvHintLabel?.text = "HINTS"
-                tvHintLabel?.setTextColor(android.graphics.Color.parseColor("#7CB342"))
+                updateHeaderHintCounter(hintsCount)
             }
         }
 
-        // مراقبة بيانات الشعار
+        // 2. مراقبة قائمة الشعارات رسم الكيبورد
         lifecycleScope.launch {
             logoViewModel.logos.collect { logosList ->
                 currentLogo = logosList.find { it._loid == currentLogoId }
@@ -119,30 +107,54 @@ class QuizActivity : AppCompatActivity() {
                         binding.ballsGrid.visibility = View.VISIBLE
 
                         setupKeyboard(logo.lo_name ?: "")
+
+                        // تطبيق القنبلة إن كانت محفوظة سابقاً
+                        applyHideHintIfUnlocked()
                     }
                 }
             }
         }
 
+        // 3. مراقبة حالة تلميح الشعار (عند تحميلها من الداتا بيز)
         lifecycleScope.launch {
             logoHintViewModel.currentLogoHintState.collect { hintEntity ->
-                hintEntity?.let {
-                    if (it.facebook == 1) {
-                        // حالة تلميح الفيسبوك إن لزم الأمر
+                if (hintEntity != null && hintEntity.hide == 1) {
+                    // التأكد من أن الـ Adapter مهيأ قبل حذف الحروف
+                    if (::lettersAdapter.isInitialized) {
+                        val correctAnswer = currentLogo?.lo_name
+                        if (!correctAnswer.isNullOrEmpty()) {
+                            lettersAdapter.removeWrongLetters(correctAnswer)
+                        }
                     }
                 }
             }
         }
     }
 
-    private fun setupActions() {
-        // زر العودة القديم (إذا كان متوفراً في الهيدر)
-        val btnBack = findViewById<View>(R.id.btnBack)
-        btnBack?.setOnClickListener {
-            finish()
+    private fun applyHideHintIfUnlocked() {
+        val hintState = logoHintViewModel.currentLogoHintState.value
+        if (hintState?.hide == 1 && ::lettersAdapter.isInitialized) {
+            val correctAnswer = currentLogo?.lo_name
+            if (!correctAnswer.isNullOrEmpty()) {
+                lettersAdapter.removeWrongLetters(correctAnswer)
+            }
         }
+    }
 
-        // حدث ضغط زر الفيسبوك
+    private fun updateHeaderHintCounter(hintsCount: Int) {
+        val tvCounterValue = findViewById<TextView>(R.id.tvCounterValue) ?: findViewById<TextView>(R.id.scoreValue)
+        val tvCounterLabel = findViewById<TextView>(R.id.tvCounterLabel) ?: findViewById<TextView>(R.id.scoreTitle)
+
+        tvCounterValue?.text = hintsCount.toString()
+        tvCounterValue?.setTextColor(android.graphics.Color.parseColor("#7CB342"))
+        tvCounterLabel?.text = "HINTS"
+        tvCounterLabel?.setTextColor(android.graphics.Color.parseColor("#7CB342"))
+    }
+
+    private fun setupActions() {
+        val btnBack = findViewById<View>(R.id.btnBack)
+        btnBack?.setOnClickListener { finish() }
+
         binding.facebook.setOnClickListener {
             handleHintUsage {
                 logoHintViewModel.unlockFacebookHint(currentLogoId)
@@ -150,7 +162,6 @@ class QuizActivity : AppCompatActivity() {
             }
         }
 
-        // حدث ضغط زر تلميح معلومات النادي (Info)
         binding.info.setOnClickListener {
             val builder = androidx.appcompat.app.AlertDialog.Builder(this)
             builder.setTitle("Hints")
@@ -163,24 +174,16 @@ class QuizActivity : AppCompatActivity() {
                 }
                 dialog.dismiss()
             }
-
-            builder.setNegativeButton("CANCEL") { dialog, _ ->
-                dialog.dismiss()
-            }
+            builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
 
             val dialog = builder.create()
             dialog.show()
-
             dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
             dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
         }
 
-        // إغلاق بوب أب المعلومات
-        binding.okInfo.setOnClickListener {
-            binding.infoPopup.visibility = View.GONE
-        }
+        binding.okInfo.setOnClickListener { binding.infoPopup.visibility = View.GONE }
 
-        // حدث ضغط زر تلميح اللاعب (Player)
         binding.player.setOnClickListener {
             handleHintUsage {
                 binding.playerName.text = "معلومات إضافية متوفرة"
@@ -188,16 +191,12 @@ class QuizActivity : AppCompatActivity() {
             }
         }
 
-        // إغلاق بوب أب اللاعب
-        binding.okPlayer.setOnClickListener {
-            binding.playerPopup.visibility = View.GONE
-        }
+        binding.okPlayer.setOnClickListener { binding.playerPopup.visibility = View.GONE }
 
-        // أزرار التنقل
         binding.nextLogoButton.setOnClickListener { navigateToNextLogo() }
         binding.prevLogoButton.setOnClickListener { navigateToPrevLogo() }
 
-        // حدث زر القنبلة (إخفاء الحروف الخاطئة)
+        // 🟢 ضغط زر القنبلة
         binding.hide.setOnClickListener {
             val builder = androidx.appcompat.app.AlertDialog.Builder(this)
             builder.setTitle("Hints")
@@ -207,49 +206,21 @@ class QuizActivity : AppCompatActivity() {
                 handleHintUsage {
                     val correctAnswer = currentLogo?.lo_name
                     if (!correctAnswer.isNullOrEmpty()) {
-                        lettersAdapter.removeWrongLetters(correctAnswer)
-                    }
-                }
-                dialog.dismiss()
-            }
-
-            builder.setNegativeButton("CANCEL") { dialog, _ ->
-                dialog.dismiss()
-            }
-
-            val dialog = builder.create()
-            dialog.show()
-
-            dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
-            dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
-        }
-
-        binding.hide.setOnClickListener {
-            val builder = androidx.appcompat.app.AlertDialog.Builder(this)
-            builder.setTitle("Hints")
-            builder.setMessage("Remove the wrong letters!\nCost : 1 hint")
-
-            builder.setPositiveButton("OK") { dialog, _ ->
-                handleHintUsage {
-                    val correctAnswer = currentLogo?.lo_name
-                    if (!correctAnswer.isNullOrEmpty()) {
-                        // 1. حذف الحروف الخاطئة فوراً
-                        lettersAdapter.removeWrongLetters(correctAnswer)
-
-                        // 2. 🟢 حفظ أن زر القنبلة تم استخدامه لهذا الشعار في DB
+                        // 1. حذف الحروف الخاطئة في الواجهة فوراً
+                        if (::lettersAdapter.isInitialized) {
+                            lettersAdapter.removeWrongLetters(correctAnswer)
+                        }
+                        // 2. 🟢 حفظ التلميح في قاعدة البيانات + إعادة تحميل الحالة فوراً
                         logoHintViewModel.unlockHideHint(currentLogoId)
                     }
                 }
                 dialog.dismiss()
             }
 
-            builder.setNegativeButton("CANCEL") { dialog, _ ->
-                dialog.dismiss()
-            }
+            builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
 
             val dialog = builder.create()
             dialog.show()
-
             dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
             dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
         }
@@ -269,9 +240,7 @@ class QuizActivity : AppCompatActivity() {
         ivDialogIcon.setImageResource(imageResId)
         tvDialogMessage.text = message
 
-        btnOk.setOnClickListener {
-            dialog.dismiss()
-        }
+        btnOk.setOnClickListener { dialog.dismiss() }
 
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         dialog.show()
@@ -344,41 +313,22 @@ class QuizActivity : AppCompatActivity() {
             slotSourcePositions.remove(slotIndex)
         }
     }
+
     private fun checkAnswerComplete() {
-        // تجميد الإجابة المدخلة والمقارنة بشكل دقيق
         val currentEnteredAnswer = answerSlots.map { it?.text ?: "" }.joinToString("").trim()
         val realAnswer = currentLogo?.lo_name?.replace(" ", "")?.trim() ?: ""
 
         if (currentEnteredAnswer.length == realAnswer.length) {
             if (currentEnteredAnswer.equals(realAnswer, ignoreCase = true)) {
 
-                // 1. إظهار صفارة/علامة الفوز
                 binding.whistle.visibility = View.VISIBLE
 
-                // 2. زيادة رصيد المساعدات في الـ ViewModel والـ DB
                 hintViewModel.rewardHints(1)
-
-                // 3. تحديث نص العداد علوياً على الواجهة مباشرة لضمان اللحظية (Immediate UI Update)
-                val tvCounterValue = findViewById<TextView>(R.id.tvCounterValue)
-                val tvCounterLabel = findViewById<TextView>(R.id.tvCounterLabel)
-
-                if (tvCounterValue != null) {
-                    val currentVal = tvCounterValue.text.toString().toIntOrNull() ?: 0
-                    tvCounterValue.text = (currentVal + 1).toString()
-
-                    // تعديل المظهر واللون للأخضر المطابق للـ Header القديم
-                    tvCounterLabel?.text = "HINTS"
-                    tvCounterLabel?.setTextColor(android.graphics.Color.parseColor("#7CB342"))
-                    tvCounterValue.setTextColor(android.graphics.Color.parseColor("#7CB342"))
-                }
-
-                // 4. إظهار التوست للتأكيد
                 Toast.makeText(applicationContext, "+1 Hint!", Toast.LENGTH_SHORT).show()
 
-                // 5. حفظ حالة الشعار كـ "محلول" في الداتا بيز وإظهار واجهة الاكتفاء
+                // حفظ الإجابة وتحديث الشعار كـ مكتمل
                 logoHintViewModel.submitCorrectAnswer(currentLogoId, 100, currentLevelId)
 
-                // تأخير بسيط 300ms لإتاحة الوقت للمستخدم لرؤية الحركة قبل إخفاء الكيبورد
                 binding.root.postDelayed({
                     showCompletedLayout(currentLogo!!)
                 }, 300)
@@ -388,36 +338,6 @@ class QuizActivity : AppCompatActivity() {
                 binding.root.postDelayed({ binding.wrong.visibility = View.GONE }, 1500)
             }
         }
-    }
-
-    private fun checkAnsw2erComplete() {
-        val currentEnteredAnswer = answerSlots.map { it?.text ?: " " }.joinToString("").trim()
-        val realAnswer = currentLogo?.lo_name?.trim() ?: ""
-
-        if (currentEnteredAnswer.length == realAnswer.length) {
-            if (currentEnteredAnswer.equals(realAnswer, ignoreCase = true)) {
-                binding.whistle.visibility = View.VISIBLE
-
-                // 🟢 1. مكافأة اللاعب: زيادة رصيد المساعدات (+1 Hint) 🟢
-                rewardUserWithHint()
-
-                // 2. تحديث حالة الشعار كـ "محلول" في قاعدة البيانات
-                showCompletedLayout(currentLogo!!)
-                logoHintViewModel.submitCorrectAnswer(currentLogoId, 100, currentLevelId)
-            } else {
-                binding.wrong.visibility = View.VISIBLE
-                binding.root.postDelayed({ binding.wrong.visibility = View.GONE }, 1500)
-            }
-        }
-    }
-
-    /**
-     * دالة إضافة Hint مجاني عند الإجابة الصحيحة
-     */
-    private fun rewardUserWithHint() {
-        // زيادة المساعدة المتاحة عبر الـ HintViewModel
-        hintViewModel.addHint(1) // أو استخدم الميثود الموجودة لديك مثل rewardHint()
-        Toast.makeText(this, "+1 Hint!", Toast.LENGTH_SHORT).show()
     }
 
     private fun generateShuffledLetters(answer: String): List<Char> {
@@ -491,6 +411,7 @@ class QuizActivity : AppCompatActivity() {
         binding.infoText.text = ""
         binding.playerName.text = ""
 
+        // إعادة جلب حالة التلميح للشعار الجديد
         logoHintViewModel.loadHintStateForLogo(currentLogoId)
 
         val logosList = logoViewModel.logos.value
@@ -507,10 +428,961 @@ class QuizActivity : AppCompatActivity() {
                 binding.rightHints.visibility = View.VISIBLE
                 binding.ballsGrid.visibility = View.VISIBLE
                 setupKeyboard(logo.lo_name ?: "")
+                applyHideHintIfUnlocked()
             }
         }
     }
 }
+//package com.example.football2
+//
+//import android.os.Bundle
+//import android.view.LayoutInflater
+//import android.view.View
+//import android.widget.FrameLayout
+//import android.widget.LinearLayout
+//import android.widget.TextView
+//import android.widget.Toast
+//import androidx.appcompat.app.AppCompatActivity
+//import androidx.lifecycle.ViewModelProvider
+//import androidx.lifecycle.lifecycleScope
+//import com.example.football.R
+//import com.example.football.databinding.ActivityQuizBinding
+//import com.example.football2.adabter.LettersAdapter
+//import com.example.football2.entity.LogoEntity
+//import com.example.football2.repository.GameControlRepository
+//import com.example.football2.repository.HintRepository
+//import com.example.football2.repository.LogoHintRepository
+//import com.example.football2.repository.LogoRepository
+//import com.sarrawi.footballlogoquiz.data.AppDatabase
+//import com.sarrawi.footballlogoquiz.ui.viewmodel.HintViewModel
+//import com.sarrawi.footballlogoquiz.ui.viewmodel.LogoHintViewModel
+//import com.sarrawi.footballlogoquiz.ui.viewmodel.LogoViewModel
+//import com.sarrawi.footballlogoquiz.ui.viewmodel.ViewModelFactory
+//import kotlinx.coroutines.launch
+//
+//class QuizActivity : AppCompatActivity() {
+//
+//    private lateinit var binding: ActivityQuizBinding
+//
+//    private lateinit var logoViewModel: LogoViewModel
+//    private lateinit var hintViewModel: HintViewModel
+//    private lateinit var logoHintViewModel: LogoHintViewModel
+//
+//    private var currentLogoId: Int = 0
+//    private var currentLevelId: Int = 0
+//    private var currentLogo: LogoEntity? = null
+//
+//    // إدارة نظام الحروف والمربعات
+//    private lateinit var lettersAdapter: LettersAdapter
+//    private val answerSlots = ArrayList<TextView?>()
+//    private val slotSourcePositions = HashMap<Int, Int>()
+//
+//    override fun onCreate(savedInstanceState: Bundle?) {
+//        super.onCreate(savedInstanceState)
+//        binding = ActivityQuizBinding.inflate(layoutInflater)
+//        setContentView(binding.root)
+//
+//        // 1. استقبال البيانات
+//        currentLogoId = intent.getIntExtra("LOGO_ID", 0)
+//        currentLevelId = intent.getIntExtra("LEVEL_ID", 0)
+//
+//        // 2. تجهيز Repositories & Database
+//        val database = AppDatabase.getDatabase(this)
+//        val logoRepo = LogoRepository(database.logoDao())
+//        val hintRepo = HintRepository(database.hintDao())
+//        val logoHintRepo = LogoHintRepository(database.logoHintDao())
+//        val gameControlRepo = GameControlRepository(
+//            database.gameControlDao(),
+//            database.logoDao(),
+//            database.levelDao(),
+//            database.hintDao(),
+//            database.logoHintDao()
+//        )
+//
+//        // 3. بناء ViewModels
+//        val factory = ViewModelFactory(
+//            logoRepository = logoRepo,
+//            hintRepository = hintRepo,
+//            logoHintRepository = logoHintRepo,
+//            gameControlRepository = gameControlRepo
+//        )
+//
+//        logoViewModel = ViewModelProvider(this, factory)[LogoViewModel::class.java]
+//        hintViewModel = ViewModelProvider(this, factory)[HintViewModel::class.java]
+//        logoHintViewModel = ViewModelProvider(this, factory)[LogoHintViewModel::class.java]
+//
+//        // 4. تحميل البيانات
+//        logoViewModel.loadLogosForLevel(currentLevelId)
+//        hintViewModel.loadCurrentHints()
+//        logoHintViewModel.loadHintStateForLogo(currentLogoId)
+//
+//        // 5. مراقبة البيانات والأحداث
+//        observeGameStates()
+//        setupActions()
+//    }
+//
+//    private fun observeGameStates() {
+//        // 1. مراقبة وتحديث العداد العلوي للمساعدات بشكل موحد
+//        lifecycleScope.launch {
+//            hintViewModel.currentHints.collect { hintsCount ->
+//                updateHeaderHintCounter(hintsCount)
+//            }
+//        }
+//
+//        // 2. مراقبة بيانات قائمة الشعارات
+//        lifecycleScope.launch {
+//            logoViewModel.logos.collect { logosList ->
+//                currentLogo = logosList.find { it._loid == currentLogoId }
+//                currentLogo?.let { logo ->
+//                    val resId = resources.getIdentifier(logo.lo_image, "drawable", packageName)
+//                    if (resId != 0) binding.logo.setImageResource(resId)
+//
+//                    if (logo.lo_completed == "1") {
+//                        showCompletedLayout(logo)
+//                    } else {
+//                        binding.completedLayout.visibility = View.GONE
+//                        binding.leftHints.visibility = View.VISIBLE
+//                        binding.rightHints.visibility = View.VISIBLE
+//                        binding.ballsGrid.visibility = View.VISIBLE
+//
+//                        setupKeyboard(logo.lo_name ?: "")
+//
+//                        // بعد إنشاء الكيبورد نتحقق إن كانت القنبلة مستخدمة لهذا الشعار
+//                        checkAndApplyHideHint()
+//                    }
+//                }
+//            }
+//        }
+//
+//        // 3. مراقبة حالة التلميحات الخاصة بالشعار الحالي
+//        lifecycleScope.launch {
+//            logoHintViewModel.currentLogoHintState.collect { hintEntity ->
+//                hintEntity?.let {
+//                    checkAndApplyHideHint()
+//                }
+//            }
+//        }
+//    }
+//
+//    private fun checkAndApplyHideHint() {
+//        val hintState = logoHintViewModel.currentLogoHintState.value
+//        if (hintState?.hide == 1 && ::lettersAdapter.isInitialized) {
+//            val correctAnswer = currentLogo?.lo_name
+//            if (!correctAnswer.isNullOrEmpty()) {
+//                lettersAdapter.removeWrongLetters(correctAnswer)
+//            }
+//        }
+//    }
+//
+//    private fun updateHeaderHintCounter(hintsCount: Int) {
+//        // فحص الـ IDs المحتملة للشريط العلوي لضمان الوصول للعنصر الصحيح في XML
+//        val tvCounterValue = findViewById<TextView>(R.id.tvCounterValue) ?: findViewById<TextView>(R.id.scoreValue)
+//        val tvCounterLabel = findViewById<TextView>(R.id.tvCounterLabel) ?: findViewById<TextView>(R.id.scoreTitle)
+//
+//        tvCounterValue?.text = hintsCount.toString()
+//        tvCounterValue?.setTextColor(android.graphics.Color.parseColor("#7CB342"))
+//
+//        tvCounterLabel?.text = "HINTS"
+//        tvCounterLabel?.setTextColor(android.graphics.Color.parseColor("#7CB342"))
+//    }
+//
+//    private fun setupActions() {
+//        val btnBack = findViewById<View>(R.id.btnBack)
+//        btnBack?.setOnClickListener { finish() }
+//
+//        // زر الفيسبوك
+//        binding.facebook.setOnClickListener {
+//            handleHintUsage {
+//                logoHintViewModel.unlockFacebookHint(currentLogoId)
+//                Toast.makeText(this, "تم فتح تلميح فيسبوك", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//
+//        // زر التلميح والمعلومات
+//        binding.info.setOnClickListener {
+//            val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+//            builder.setTitle("Hints")
+//            builder.setMessage("Show a clue sentence of the answer!\nCost : 1 hint")
+//
+//            builder.setPositiveButton("OK") { dialog, _ ->
+//                handleHintUsage {
+//                    val infoMessage = currentLogo?.lo_info ?: "لا توجد معلومات متاحة لهذا النادي"
+//                    showBlackCustomDialog(infoMessage, R.drawable.wikipedia_pressed)
+//                }
+//                dialog.dismiss()
+//            }
+//            builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
+//
+//            val dialog = builder.create()
+//            dialog.show()
+//            dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//            dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//        }
+//
+//        binding.okInfo.setOnClickListener { binding.infoPopup.visibility = View.GONE }
+//
+//        // زر تلميح اللاعب
+//        binding.player.setOnClickListener {
+//            handleHintUsage {
+//                binding.playerName.text = "معلومات إضافية متوفرة"
+//                binding.playerPopup.visibility = View.VISIBLE
+//            }
+//        }
+//
+//        binding.okPlayer.setOnClickListener { binding.playerPopup.visibility = View.GONE }
+//
+//        // التنقل
+//        binding.nextLogoButton.setOnClickListener { navigateToNextLogo() }
+//        binding.prevLogoButton.setOnClickListener { navigateToPrevLogo() }
+//
+//        // زر القنبلة
+//        binding.hide.setOnClickListener {
+//            val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+//            builder.setTitle("Hints")
+//            builder.setMessage("Remove the wrong letters!\nCost : 1 hint")
+//
+//            builder.setPositiveButton("OK") { dialog, _ ->
+//                handleHintUsage {
+//                    val correctAnswer = currentLogo?.lo_name
+//                    if (!correctAnswer.isNullOrEmpty()) {
+//                        lettersAdapter.removeWrongLetters(correctAnswer)
+//                        logoHintViewModel.unlockHideHint(currentLogoId)
+//                    }
+//                }
+//                dialog.dismiss()
+//            }
+//
+//            builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
+//
+//            val dialog = builder.create()
+//            dialog.show()
+//            dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//            dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//        }
+//    }
+//
+//    fun showBlackCustomDialog(message: String, imageResId: Int) {
+//        val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+//        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_hint_info, null)
+//        builder.setView(dialogView)
+//
+//        val dialog = builder.create()
+//
+//        val ivDialogIcon = dialogView.findViewById<android.widget.ImageView>(R.id.ivDialogIcon)
+//        val tvDialogMessage = dialogView.findViewById<TextView>(R.id.tvDialogMessage)
+//        val btnOk = dialogView.findViewById<android.widget.Button>(R.id.btnOk)
+//
+//        ivDialogIcon.setImageResource(imageResId)
+//        tvDialogMessage.text = message
+//
+//        btnOk.setOnClickListener { dialog.dismiss() }
+//
+//        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+//        dialog.show()
+//    }
+//
+//    private fun setupKeyboard(correctAnswer: String) {
+//        val shuffledLetters = generateShuffledLetters(correctAnswer)
+//
+//        lettersAdapter = LettersAdapter(this, shuffledLetters) { position, letter ->
+//            addLetterToAnswer(position, letter)
+//        }
+//        binding.ballsGrid.adapter = lettersAdapter
+//
+//        binding.spacesGrid1.removeAllViews()
+//        binding.spacesGrid2.removeAllViews()
+//        answerSlots.clear()
+//        slotSourcePositions.clear()
+//
+//        for (i in correctAnswer.indices) {
+//            if (correctAnswer[i] == ' ') {
+//                val spaceView = View(this).apply {
+//                    layoutParams = LinearLayout.LayoutParams(24, 10)
+//                }
+//                binding.spacesGrid1.addView(spaceView)
+//                answerSlots.add(null)
+//            } else {
+//                val slotView = LayoutInflater.from(this).inflate(R.layout.item_letter_ball, binding.spacesGrid1, false) as FrameLayout
+//                val tvSlot = slotView.findViewById<TextView>(R.id.tvLetter)
+//
+//                tvSlot.text = ""
+//                tvSlot.setBackgroundResource(R.drawable.hint_background)
+//
+//                val slotIndex = i
+//                slotView.setOnClickListener {
+//                    removeLetterFromAnswer(slotIndex)
+//                }
+//
+//                if (i < 8) {
+//                    binding.spacesGrid1.addView(slotView)
+//                } else {
+//                    binding.spacesGrid2.addView(slotView)
+//                }
+//
+//                answerSlots.add(tvSlot)
+//            }
+//        }
+//    }
+//
+//    private fun addLetterToAnswer(gridPosition: Int, letter: Char) {
+//        for (i in answerSlots.indices) {
+//            val tvSlot = answerSlots[i]
+//            if (tvSlot != null && tvSlot.text.isEmpty()) {
+//                tvSlot.text = letter.toString()
+//                slotSourcePositions[i] = gridPosition
+//                lettersAdapter.hideLetter(gridPosition)
+//                checkAnswerComplete()
+//                break
+//            }
+//        }
+//    }
+//
+//    private fun removeLetterFromAnswer(slotIndex: Int) {
+//        val tvSlot = answerSlots[slotIndex]
+//        if (tvSlot != null && tvSlot.text.isNotEmpty()) {
+//            val originalGridPos = slotSourcePositions[slotIndex]
+//            if (originalGridPos != null) {
+//                lettersAdapter.showLetter(originalGridPos)
+//            }
+//            tvSlot.text = ""
+//            slotSourcePositions.remove(slotIndex)
+//        }
+//    }
+//
+//    private fun checkAnswerComplete() {
+//        val currentEnteredAnswer = answerSlots.map { it?.text ?: "" }.joinToString("").trim()
+//        val realAnswer = currentLogo?.lo_name?.replace(" ", "")?.trim() ?: ""
+//
+//        if (currentEnteredAnswer.length == realAnswer.length) {
+//            if (currentEnteredAnswer.equals(realAnswer, ignoreCase = true)) {
+//
+//                binding.whistle.visibility = View.VISIBLE
+//
+//                // 1. إضافة المساعدة عبر الـ ViewModel وتدفق البيانات سيتكفل برسم الرقم الجديد تلقائياً
+//                hintViewModel.rewardHints(1)
+//
+//                Toast.makeText(applicationContext, "+1 Hint!", Toast.LENGTH_SHORT).show()
+//
+//                // 2. تحديث DB
+//                logoHintViewModel.submitCorrectAnswer(currentLogoId, 100, currentLevelId)
+//
+//                binding.root.postDelayed({
+//                    showCompletedLayout(currentLogo!!)
+//                }, 300)
+//
+//            } else {
+//                binding.wrong.visibility = View.VISIBLE
+//                binding.root.postDelayed({ binding.wrong.visibility = View.GONE }, 1500)
+//            }
+//        }
+//    }
+//
+//    private fun generateShuffledLetters(answer: String): List<Char> {
+//        val cleanAnswer = answer.replace(" ", "").uppercase().trim()
+//        val lettersList = cleanAnswer.toMutableList()
+//        val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+//
+//        while (lettersList.size < 18) {
+//            val randomChar = alphabet.random()
+//            if (lettersList.count { it == randomChar } < 2) {
+//                lettersList.add(randomChar)
+//            }
+//        }
+//        return lettersList.shuffled()
+//    }
+//
+//    private inline fun handleHintUsage(onHintUnlocked: () -> Unit) {
+//        if (hintViewModel.currentHints.value > 0) {
+//            hintViewModel.useHint()
+//            onHintUnlocked()
+//        } else {
+//            Toast.makeText(this, "لا يوجد رصيد مساعدات كافٍ!", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun showCompletedLayout(logo: LogoEntity) {
+//        binding.leftHints.visibility = View.GONE
+//        binding.rightHints.visibility = View.GONE
+//        binding.ballsGrid.visibility = View.GONE
+//
+//        binding.completedLayout.visibility = View.VISIBLE
+//        binding.loName.text = logo.lo_name
+//        binding.points.text = "${logo.lo_points} Pt"
+//    }
+//
+//    private fun navigateToNextLogo() {
+//        val logosList = logoViewModel.logos.value
+//        if (logosList.isNotEmpty()) {
+//            val currentIndex = logosList.indexOfFirst { it._loid == currentLogoId }
+//
+//            if (currentIndex != -1 && currentIndex < logosList.size - 1) {
+//                val nextLogo = logosList[currentIndex + 1]
+//                updateActivityForNewLogo(nextLogo._loid ?: 0)
+//            } else {
+//                Toast.makeText(this, "لقد وصلت لآخر شعار في هذا المستوى!", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//    }
+//
+//    private fun navigateToPrevLogo() {
+//        val logosList = logoViewModel.logos.value
+//        if (logosList.isNotEmpty()) {
+//            val currentIndex = logosList.indexOfFirst { it._loid == currentLogoId }
+//
+//            if (currentIndex > 0) {
+//                val prevLogo = logosList[currentIndex - 1]
+//                updateActivityForNewLogo(prevLogo._loid ?: 0)
+//            } else {
+//                Toast.makeText(this, "هذا هو الشعار الأول في المستوى!", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//    }
+//
+//    private fun updateActivityForNewLogo(newLogoId: Int) {
+//        currentLogoId = newLogoId
+//
+//        binding.whistle.visibility = View.GONE
+//        binding.wrong.visibility = View.GONE
+//        binding.infoPopup.visibility = View.GONE
+//        binding.playerPopup.visibility = View.GONE
+//        binding.infoText.text = ""
+//        binding.playerName.text = ""
+//
+//        logoHintViewModel.loadHintStateForLogo(currentLogoId)
+//
+//        val logosList = logoViewModel.logos.value
+//        currentLogo = logosList.find { it._loid == currentLogoId }
+//        currentLogo?.let { logo ->
+//            val resId = resources.getIdentifier(logo.lo_image, "drawable", packageName)
+//            if (resId != 0) binding.logo.setImageResource(resId)
+//
+//            if (logo.lo_completed == "1") {
+//                showCompletedLayout(logo)
+//            } else {
+//                binding.completedLayout.visibility = View.GONE
+//                binding.leftHints.visibility = View.VISIBLE
+//                binding.rightHints.visibility = View.VISIBLE
+//                binding.ballsGrid.visibility = View.VISIBLE
+//                setupKeyboard(logo.lo_name ?: "")
+//                checkAndApplyHideHint()
+//            }
+//        }
+//    }
+//}
+
+//package com.example.football2
+//
+//import android.os.Bundle
+//import android.view.LayoutInflater
+//import android.view.View
+//import android.widget.FrameLayout
+//import android.widget.LinearLayout
+//import android.widget.TextView
+//import android.widget.Toast
+//import androidx.appcompat.app.AppCompatActivity
+//import androidx.lifecycle.ViewModelProvider
+//import androidx.lifecycle.lifecycleScope
+//import com.example.football.R
+//import com.example.football.databinding.ActivityQuizBinding
+//import com.example.football2.adabter.LettersAdapter
+//import com.example.football2.entity.LogoEntity
+//import com.example.football2.repository.GameControlRepository
+//import com.example.football2.repository.HintRepository
+//import com.example.football2.repository.LogoHintRepository
+//import com.example.football2.repository.LogoRepository
+//import com.sarrawi.footballlogoquiz.data.AppDatabase
+//import com.sarrawi.footballlogoquiz.ui.viewmodel.HintViewModel
+//import com.sarrawi.footballlogoquiz.ui.viewmodel.LogoHintViewModel
+//import com.sarrawi.footballlogoquiz.ui.viewmodel.LogoViewModel
+//import com.sarrawi.footballlogoquiz.ui.viewmodel.ViewModelFactory
+//import kotlinx.coroutines.launch
+//
+//class QuizActivity : AppCompatActivity() {
+//
+//    private lateinit var binding: ActivityQuizBinding
+//
+//    private lateinit var logoViewModel: LogoViewModel
+//    private lateinit var hintViewModel: HintViewModel
+//    private lateinit var logoHintViewModel: LogoHintViewModel
+//
+//    private var currentLogoId: Int = 0
+//    private var currentLevelId: Int = 0
+//    private var currentLogo: LogoEntity? = null
+//
+//    // متغيرات إدارة نظام الحروف والمربعات
+//    private lateinit var lettersAdapter: LettersAdapter
+//    private val answerSlots = ArrayList<TextView?>()          // تتبع مربعات الإجابة العلوية
+//    private val slotSourcePositions = HashMap<Int, Int>()     // يربط بين رقم المربع ومكانه في الـ GridView
+//
+//    override fun onCreate(savedInstanceState: Bundle?) {
+//        super.onCreate(savedInstanceState)
+//        binding = ActivityQuizBinding.inflate(layoutInflater)
+//        setContentView(binding.root)
+//
+//        // 1. استقبال المعرفات
+//        currentLogoId = intent.getIntExtra("LOGO_ID", 0)
+//        currentLevelId = intent.getIntExtra("LEVEL_ID", 0)
+//
+//        // 2. تجهيز قاعدة البيانات والـ Repositories
+//        val database = AppDatabase.getDatabase(this)
+//        val logoRepo = LogoRepository(database.logoDao())
+//        val hintRepo = HintRepository(database.hintDao())
+//        val logoHintRepo = LogoHintRepository(database.logoHintDao())
+//        val gameControlRepo = GameControlRepository(
+//            database.gameControlDao(),
+//            database.logoDao(),
+//            database.levelDao(),
+//            database.hintDao(),
+//            database.logoHintDao()
+//        )
+//
+//        // 3. بناء الـ ViewModels عبر الـ Factory
+//        val factory = ViewModelFactory(
+//            logoRepository = logoRepo,
+//            hintRepository = hintRepo,
+//            logoHintRepository = logoHintRepo,
+//            gameControlRepository = gameControlRepo
+//        )
+//
+//        logoViewModel = ViewModelProvider(this, factory)[LogoViewModel::class.java]
+//        hintViewModel = ViewModelProvider(this, factory)[HintViewModel::class.java]
+//        logoHintViewModel = ViewModelProvider(this, factory)[LogoHintViewModel::class.java]
+//
+//        // 4. تحميل البيانات عند فتح الشاشة
+//        logoViewModel.loadLogosForLevel(currentLevelId)
+//        hintViewModel.loadCurrentHints()
+//        logoHintViewModel.loadHintStateForLogo(currentLogoId)
+//
+//        // 5. مراقبة الـ StateFlows
+//        observeGameStates()
+//
+//        // 6. إعداد الأحداث
+//        setupActions()
+//    }
+//
+//    private fun observeGameStates() {
+//        // مراقبة رصيد المساعدات وتحديث شريط العنوان العلوي (مظهر الـ HINTS الأخضر القديم)
+//        lifecycleScope.launch {
+//            hintViewModel.currentHints.collect { hintsCount ->
+//                val tvHintCount = findViewById<TextView>(R.id.scoreValue)
+//                val tvHintLabel = findViewById<TextView>(R.id.scoreTitle) // إذا كان موجوداً في الهيدر
+//
+//                tvHintCount?.text = hintsCount.toString()
+//                tvHintCount?.setTextColor(android.graphics.Color.parseColor("#7CB342")) // أخضر فسفوري مطابق للنسخة القديمة
+//                tvHintLabel?.text = "HINTS"
+//                tvHintLabel?.setTextColor(android.graphics.Color.parseColor("#7CB342"))
+//            }
+//        }
+//
+//        // مراقبة بيانات الشعار
+//        lifecycleScope.launch {
+//            logoViewModel.logos.collect { logosList ->
+//                currentLogo = logosList.find { it._loid == currentLogoId }
+//                currentLogo?.let { logo ->
+//                    val resId = resources.getIdentifier(logo.lo_image, "drawable", packageName)
+//                    if (resId != 0) binding.logo.setImageResource(resId)
+//
+//                    if (logo.lo_completed == "1") {
+//                        showCompletedLayout(logo)
+//                    } else {
+//                        binding.completedLayout.visibility = View.GONE
+//                        binding.leftHints.visibility = View.VISIBLE
+//                        binding.rightHints.visibility = View.VISIBLE
+//                        binding.ballsGrid.visibility = View.VISIBLE
+//
+//                        setupKeyboard(logo.lo_name ?: "")
+//                    }
+//                }
+//            }
+//        }
+//
+//        lifecycleScope.launch {
+//            logoHintViewModel.currentLogoHintState.collect { hintEntity ->
+//                hintEntity?.let {
+//                    if (it.facebook == 1) {
+//                        // حالة تلميح الفيسبوك إن لزم الأمر
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    private fun setupActions() {
+//        // زر العودة القديم (إذا كان متوفراً في الهيدر)
+//        val btnBack = findViewById<View>(R.id.btnBack)
+//        btnBack?.setOnClickListener {
+//            finish()
+//        }
+//
+//        // حدث ضغط زر الفيسبوك
+//        binding.facebook.setOnClickListener {
+//            handleHintUsage {
+//                logoHintViewModel.unlockFacebookHint(currentLogoId)
+//                Toast.makeText(this, "تم فتح تلميح فيسبوك", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//
+//        // حدث ضغط زر تلميح معلومات النادي (Info)
+//        binding.info.setOnClickListener {
+//            val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+//            builder.setTitle("Hints")
+//            builder.setMessage("Show a clue sentence of the answer!\nCost : 1 hint")
+//
+//            builder.setPositiveButton("OK") { dialog, _ ->
+//                handleHintUsage {
+//                    val infoMessage = currentLogo?.lo_info ?: "لا توجد معلومات متاحة لهذا النادي"
+//                    showBlackCustomDialog(infoMessage, R.drawable.wikipedia_pressed)
+//                }
+//                dialog.dismiss()
+//            }
+//
+//            builder.setNegativeButton("CANCEL") { dialog, _ ->
+//                dialog.dismiss()
+//            }
+//
+//            val dialog = builder.create()
+//            dialog.show()
+//
+//            dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//            dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//        }
+//
+//        // إغلاق بوب أب المعلومات
+//        binding.okInfo.setOnClickListener {
+//            binding.infoPopup.visibility = View.GONE
+//        }
+//
+//        // حدث ضغط زر تلميح اللاعب (Player)
+//        binding.player.setOnClickListener {
+//            handleHintUsage {
+//                binding.playerName.text = "معلومات إضافية متوفرة"
+//                binding.playerPopup.visibility = View.VISIBLE
+//            }
+//        }
+//
+//        // إغلاق بوب أب اللاعب
+//        binding.okPlayer.setOnClickListener {
+//            binding.playerPopup.visibility = View.GONE
+//        }
+//
+//        // أزرار التنقل
+//        binding.nextLogoButton.setOnClickListener { navigateToNextLogo() }
+//        binding.prevLogoButton.setOnClickListener { navigateToPrevLogo() }
+//
+//        // حدث زر القنبلة (إخفاء الحروف الخاطئة)
+//        binding.hide.setOnClickListener {
+//            val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+//            builder.setTitle("Hints")
+//            builder.setMessage("Remove the wrong letters!\nCost : 1 hint")
+//
+//            builder.setPositiveButton("OK") { dialog, _ ->
+//                handleHintUsage {
+//                    val correctAnswer = currentLogo?.lo_name
+//                    if (!correctAnswer.isNullOrEmpty()) {
+//                        lettersAdapter.removeWrongLetters(correctAnswer)
+//                    }
+//                }
+//                dialog.dismiss()
+//            }
+//
+//            builder.setNegativeButton("CANCEL") { dialog, _ ->
+//                dialog.dismiss()
+//            }
+//
+//            val dialog = builder.create()
+//            dialog.show()
+//
+//            dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//            dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//        }
+//
+//        binding.hide.setOnClickListener {
+//            val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+//            builder.setTitle("Hints")
+//            builder.setMessage("Remove the wrong letters!\nCost : 1 hint")
+//
+//            builder.setPositiveButton("OK") { dialog, _ ->
+//                handleHintUsage {
+//                    val correctAnswer = currentLogo?.lo_name
+//                    if (!correctAnswer.isNullOrEmpty()) {
+//                        // 1. حذف الحروف الخاطئة فوراً
+//                        lettersAdapter.removeWrongLetters(correctAnswer)
+//
+//                        // 2. 🟢 حفظ أن زر القنبلة تم استخدامه لهذا الشعار في DB
+//                        logoHintViewModel.unlockHideHint(currentLogoId)
+//                    }
+//                }
+//                dialog.dismiss()
+//            }
+//
+//            builder.setNegativeButton("CANCEL") { dialog, _ ->
+//                dialog.dismiss()
+//            }
+//
+//            val dialog = builder.create()
+//            dialog.show()
+//
+//            dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//            dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//        }
+//    }
+//
+//    fun showBlackCustomDialog(message: String, imageResId: Int) {
+//        val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+//        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_hint_info, null)
+//        builder.setView(dialogView)
+//
+//        val dialog = builder.create()
+//
+//        val ivDialogIcon = dialogView.findViewById<android.widget.ImageView>(R.id.ivDialogIcon)
+//        val tvDialogMessage = dialogView.findViewById<TextView>(R.id.tvDialogMessage)
+//        val btnOk = dialogView.findViewById<android.widget.Button>(R.id.btnOk)
+//
+//        ivDialogIcon.setImageResource(imageResId)
+//        tvDialogMessage.text = message
+//
+//        btnOk.setOnClickListener {
+//            dialog.dismiss()
+//        }
+//
+//        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+//        dialog.show()
+//    }
+//
+//    private fun setupKeyboard(correctAnswer: String) {
+//        val shuffledLetters = generateShuffledLetters(correctAnswer)
+//
+//        lettersAdapter = LettersAdapter(this, shuffledLetters) { position, letter ->
+//            addLetterToAnswer(position, letter)
+//        }
+//        binding.ballsGrid.adapter = lettersAdapter
+//
+//        binding.spacesGrid1.removeAllViews()
+//        binding.spacesGrid2.removeAllViews()
+//        answerSlots.clear()
+//        slotSourcePositions.clear()
+//
+//        for (i in correctAnswer.indices) {
+//            if (correctAnswer[i] == ' ') {
+//                val spaceView = View(this).apply {
+//                    layoutParams = LinearLayout.LayoutParams(24, 10)
+//                }
+//                binding.spacesGrid1.addView(spaceView)
+//                answerSlots.add(null)
+//            } else {
+//                val slotView = LayoutInflater.from(this).inflate(R.layout.item_letter_ball, binding.spacesGrid1, false) as FrameLayout
+//                val tvSlot = slotView.findViewById<TextView>(R.id.tvLetter)
+//
+//                tvSlot.text = ""
+//                tvSlot.setBackgroundResource(R.drawable.hint_background)
+//
+//                val slotIndex = i
+//                slotView.setOnClickListener {
+//                    removeLetterFromAnswer(slotIndex)
+//                }
+//
+//                if (i < 8) {
+//                    binding.spacesGrid1.addView(slotView)
+//                } else {
+//                    binding.spacesGrid2.addView(slotView)
+//                }
+//
+//                answerSlots.add(tvSlot)
+//            }
+//        }
+//    }
+//
+//    private fun addLetterToAnswer(gridPosition: Int, letter: Char) {
+//        for (i in answerSlots.indices) {
+//            val tvSlot = answerSlots[i]
+//            if (tvSlot != null && tvSlot.text.isEmpty()) {
+//                tvSlot.text = letter.toString()
+//                slotSourcePositions[i] = gridPosition
+//                lettersAdapter.hideLetter(gridPosition)
+//                checkAnswerComplete()
+//                break
+//            }
+//        }
+//    }
+//
+//    private fun removeLetterFromAnswer(slotIndex: Int) {
+//        val tvSlot = answerSlots[slotIndex]
+//        if (tvSlot != null && tvSlot.text.isNotEmpty()) {
+//            val originalGridPos = slotSourcePositions[slotIndex]
+//            if (originalGridPos != null) {
+//                lettersAdapter.showLetter(originalGridPos)
+//            }
+//            tvSlot.text = ""
+//            slotSourcePositions.remove(slotIndex)
+//        }
+//    }
+//    private fun checkAnswerComplete() {
+//        // تجميد الإجابة المدخلة والمقارنة بشكل دقيق
+//        val currentEnteredAnswer = answerSlots.map { it?.text ?: "" }.joinToString("").trim()
+//        val realAnswer = currentLogo?.lo_name?.replace(" ", "")?.trim() ?: ""
+//
+//        if (currentEnteredAnswer.length == realAnswer.length) {
+//            if (currentEnteredAnswer.equals(realAnswer, ignoreCase = true)) {
+//
+//                // 1. إظهار صفارة/علامة الفوز
+//                binding.whistle.visibility = View.VISIBLE
+//
+//                // 2. زيادة رصيد المساعدات في الـ ViewModel والـ DB
+//                hintViewModel.rewardHints(1)
+//
+//                // 3. تحديث نص العداد علوياً على الواجهة مباشرة لضمان اللحظية (Immediate UI Update)
+//                val tvCounterValue = findViewById<TextView>(R.id.tvCounterValue)
+//                val tvCounterLabel = findViewById<TextView>(R.id.tvCounterLabel)
+//
+//                if (tvCounterValue != null) {
+//                    val currentVal = tvCounterValue.text.toString().toIntOrNull() ?: 0
+//                    tvCounterValue.text = (currentVal + 1).toString()
+//
+//                    // تعديل المظهر واللون للأخضر المطابق للـ Header القديم
+//                    tvCounterLabel?.text = "HINTS"
+//                    tvCounterLabel?.setTextColor(android.graphics.Color.parseColor("#7CB342"))
+//                    tvCounterValue.setTextColor(android.graphics.Color.parseColor("#7CB342"))
+//                }
+//
+//                // 4. إظهار التوست للتأكيد
+//                Toast.makeText(applicationContext, "+1 Hint!", Toast.LENGTH_SHORT).show()
+//
+//                // 5. حفظ حالة الشعار كـ "محلول" في الداتا بيز وإظهار واجهة الاكتفاء
+//                logoHintViewModel.submitCorrectAnswer(currentLogoId, 100, currentLevelId)
+//
+//                // تأخير بسيط 300ms لإتاحة الوقت للمستخدم لرؤية الحركة قبل إخفاء الكيبورد
+//                binding.root.postDelayed({
+//                    showCompletedLayout(currentLogo!!)
+//                }, 300)
+//
+//            } else {
+//                binding.wrong.visibility = View.VISIBLE
+//                binding.root.postDelayed({ binding.wrong.visibility = View.GONE }, 1500)
+//            }
+//        }
+//    }
+//
+//    private fun checkAnsw2erComplete() {
+//        val currentEnteredAnswer = answerSlots.map { it?.text ?: " " }.joinToString("").trim()
+//        val realAnswer = currentLogo?.lo_name?.trim() ?: ""
+//
+//        if (currentEnteredAnswer.length == realAnswer.length) {
+//            if (currentEnteredAnswer.equals(realAnswer, ignoreCase = true)) {
+//                binding.whistle.visibility = View.VISIBLE
+//
+//                // 🟢 1. مكافأة اللاعب: زيادة رصيد المساعدات (+1 Hint) 🟢
+//                rewardUserWithHint()
+//
+//                // 2. تحديث حالة الشعار كـ "محلول" في قاعدة البيانات
+//                showCompletedLayout(currentLogo!!)
+//                logoHintViewModel.submitCorrectAnswer(currentLogoId, 100, currentLevelId)
+//            } else {
+//                binding.wrong.visibility = View.VISIBLE
+//                binding.root.postDelayed({ binding.wrong.visibility = View.GONE }, 1500)
+//            }
+//        }
+//    }
+//
+//    /**
+//     * دالة إضافة Hint مجاني عند الإجابة الصحيحة
+//     */
+//    private fun rewardUserWithHint() {
+//        // زيادة المساعدة المتاحة عبر الـ HintViewModel
+//        hintViewModel.addHint(1) // أو استخدم الميثود الموجودة لديك مثل rewardHint()
+//        Toast.makeText(this, "+1 Hint!", Toast.LENGTH_SHORT).show()
+//    }
+//
+//    private fun generateShuffledLetters(answer: String): List<Char> {
+//        val cleanAnswer = answer.replace(" ", "").uppercase().trim()
+//        val lettersList = cleanAnswer.toMutableList()
+//        val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+//
+//        while (lettersList.size < 18) {
+//            val randomChar = alphabet.random()
+//            if (lettersList.count { it == randomChar } < 2) {
+//                lettersList.add(randomChar)
+//            }
+//        }
+//        return lettersList.shuffled()
+//    }
+//
+//    private inline fun handleHintUsage(onHintUnlocked: () -> Unit) {
+//        if (hintViewModel.currentHints.value > 0) {
+//            hintViewModel.useHint()
+//            onHintUnlocked()
+//        } else {
+//            Toast.makeText(this, "لا يوجد رصيد مساعدات كافٍ!", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun showCompletedLayout(logo: LogoEntity) {
+//        binding.leftHints.visibility = View.GONE
+//        binding.rightHints.visibility = View.GONE
+//        binding.ballsGrid.visibility = View.GONE
+//
+//        binding.completedLayout.visibility = View.VISIBLE
+//        binding.loName.text = logo.lo_name
+//        binding.points.text = "${logo.lo_points} Pt"
+//    }
+//
+//    private fun navigateToNextLogo() {
+//        val logosList = logoViewModel.logos.value
+//        if (logosList.isNotEmpty()) {
+//            val currentIndex = logosList.indexOfFirst { it._loid == currentLogoId }
+//
+//            if (currentIndex != -1 && currentIndex < logosList.size - 1) {
+//                val nextLogo = logosList[currentIndex + 1]
+//                updateActivityForNewLogo(nextLogo._loid ?: 0)
+//            } else {
+//                Toast.makeText(this, "لقد وصلت لآخر شعار في هذا المستوى!", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//    }
+//
+//    private fun navigateToPrevLogo() {
+//        val logosList = logoViewModel.logos.value
+//        if (logosList.isNotEmpty()) {
+//            val currentIndex = logosList.indexOfFirst { it._loid == currentLogoId }
+//
+//            if (currentIndex > 0) {
+//                val prevLogo = logosList[currentIndex - 1]
+//                updateActivityForNewLogo(prevLogo._loid ?: 0)
+//            } else {
+//                Toast.makeText(this, "هذا هو الشعار الأول في المستوى!", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//    }
+//
+//    private fun updateActivityForNewLogo(newLogoId: Int) {
+//        currentLogoId = newLogoId
+//
+//        binding.whistle.visibility = View.GONE
+//        binding.wrong.visibility = View.GONE
+//        binding.infoPopup.visibility = View.GONE
+//        binding.playerPopup.visibility = View.GONE
+//        binding.infoText.text = ""
+//        binding.playerName.text = ""
+//
+//        logoHintViewModel.loadHintStateForLogo(currentLogoId)
+//
+//        val logosList = logoViewModel.logos.value
+//        currentLogo = logosList.find { it._loid == currentLogoId }
+//        currentLogo?.let { logo ->
+//            val resId = resources.getIdentifier(logo.lo_image, "drawable", packageName)
+//            if (resId != 0) binding.logo.setImageResource(resId)
+//
+//            if (logo.lo_completed == "1") {
+//                showCompletedLayout(logo)
+//            } else {
+//                binding.completedLayout.visibility = View.GONE
+//                binding.leftHints.visibility = View.VISIBLE
+//                binding.rightHints.visibility = View.VISIBLE
+//                binding.ballsGrid.visibility = View.VISIBLE
+//                setupKeyboard(logo.lo_name ?: "")
+//            }
+//        }
+//    }
+//}
 
 //
 //package com.example.football2

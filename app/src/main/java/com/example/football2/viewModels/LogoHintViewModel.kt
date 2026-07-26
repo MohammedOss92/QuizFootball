@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.football2.entity.LogoHintEntity
 import com.example.football2.repository.GameControlRepository
 import com.example.football2.repository.LogoHintRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +20,7 @@ class LogoHintViewModel(
     val currentLogoHintState: StateFlow<LogoHintEntity?> = _currentLogoHintState.asStateFlow()
 
     // جلب حالة التلميحات المفتوحة لشعار معين
-    fun loadHintStateForLogo(logoId: Int) {
+    fun loa1dHintStateForLogo(logoId: Int) {
         viewModelScope.launch {
             _currentLogoHintState.value = logoHintRepository.getHintState(logoId)
         }
@@ -49,10 +50,32 @@ class LogoHintViewModel(
         }
     }
 
-    fun unlockHideHint(logoId: Int) {
+    fun u1nlockHideHint(logoId: Int) {
         viewModelScope.launch {
             logoHintRepository.updateHideHint(logoId)
             loadHintStateForLogo(logoId) // إعادة تحميل الحالة لتحديث الـ Flow
+        }
+    }
+
+
+    fun loadHintStateForLogo(logoId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            // 🟢 إرجاع قيمة null مؤقتاً لتصفير الحالة للشعار الجديد
+            _currentLogoHintState.value = null
+
+            val state = logoHintRepository.getHintStateForLogo(logoId)
+            _currentLogoHintState.value = state
+        }
+    }
+
+    fun unlockHideHint(logoId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            // 1. الحفظ في الداتا بيز (سواء إضافة أو تعديل)
+            logoHintRepository.unlockHideHint(logoId)
+
+            // 2. إعادة قراءة الحالة مباشرة من DB وتمريرها للـ UI
+            val updatedState = logoHintRepository.getHintStateForLogo(logoId)
+            _currentLogoHintState.value = updatedState
         }
     }
 }

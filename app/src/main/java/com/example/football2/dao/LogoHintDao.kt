@@ -20,4 +20,11 @@ interface LogoHintDao {
     @Query("UPDATE logo_hints SET lo_hi_hide = 1 WHERE lo_hi_logo = :logoId")
     suspend fun updateHideHint(logoId: Int)
 
+    // 🟢 التصحيح: البحث حسب lo_hi_logo وليس _lo_hi_id
+    @Query("SELECT * FROM logo_hints WHERE lo_hi_logo = :logoId LIMIT 1")
+    suspend fun getHintStateForLogo(logoId: Int): LogoHintEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrReplaceLogoHint(logoHint: LogoHintEntity)
+
 }
