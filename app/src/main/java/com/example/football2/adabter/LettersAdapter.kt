@@ -116,5 +116,12 @@ class LettersAdapter(
 
         // 4. تحديث الـ GridView لإعادة رسم الحروف وإخفاء الخاطئة فوراً
         notifyDataSetChanged()
+
+    }
+    fun getLetterAt(position: Int): Char {
+        return letters[position]
+    }
+    fun getItemCountSize(): Int {
+        return letters.size
     }
 }

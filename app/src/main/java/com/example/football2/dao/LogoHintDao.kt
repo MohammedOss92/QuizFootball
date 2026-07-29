@@ -27,4 +27,7 @@ interface LogoHintDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrReplaceLogoHint(logoHint: LogoHintEntity)
 
+
+    @Query("UPDATE logo_hints SET lo_hi_info = :status WHERE lo_hi_logo = :logoId")
+    suspend fun updateInfoHint(logoId: Int, status: Int)
 }

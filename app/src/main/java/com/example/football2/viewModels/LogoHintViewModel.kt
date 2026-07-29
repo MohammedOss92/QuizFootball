@@ -99,4 +99,13 @@ class LogoHintViewModel(
             _currentLogoHintState.value = updatedState
         }
     }
+
+    fun unlockInfoHint(logoId: Int) {
+        viewModelScope.launch {
+            // تحديث قيمة info إلى 1 في الـ Repository / DAO
+            logoHintRepository.unlockInfoHint(logoId)
+            // إعادة تحميل حالة التلميحات للشعار ليتحدث الـ StateFlow تلقائياً
+            loadHintStateForLogo(logoId)
+        }
+    }
 }

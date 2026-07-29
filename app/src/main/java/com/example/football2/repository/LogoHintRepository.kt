@@ -118,4 +118,8 @@ class LogoHintRepository(private val logoHintDao: LogoHintDao) {
             logoHintDao.insertOrReplaceLogoHint(newState)
         }
     }
+
+    suspend fun unlockInfoHint(logoId: Int) {
+        logoHintDao.updateInfoHint(logoId, 1)
+    }
 }
