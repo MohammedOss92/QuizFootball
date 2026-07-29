@@ -169,24 +169,58 @@ class QuizActivity : AppCompatActivity() {
         }
 
         binding.info.setOnClickListener {
-            val builder = androidx.appcompat.app.AlertDialog.Builder(this)
-            builder.setTitle("Hints")
-            builder.setMessage("Show a clue sentence of the answer!\nCost : 1 hint")
+            val currentHintState = logoHintViewModel.currentLogoHintState.value
+            val isInfoUnlocked = currentHintState?.info == 1
+            val infoMessage = currentLogo?.lo_info ?: "لا توجد معلومات متاحة لهذا النادي"
 
-            builder.setPositiveButton("OK") { dialog, _ ->
-                handleHintUsage {
-                    val infoMessage = currentLogo?.lo_info ?: "لا توجد معلومات متاحة لهذا النادي"
-                    showBlackCustomDialog(infoMessage, R.drawable.wikipedia_pressed)
-                }
-                dialog.dismiss()
+            // 🟢 الحالة الأولى: التلميح مفتوح مسبقاً لهذا الشعار -> عرض السؤال مباشرة بدون خصم
+            if (isInfoUnlocked) {
+                showBlackCustomDialog(infoMessage, R.drawable.wikipedia_pressed)
             }
-            builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
+            // 🔴 الحالة الثانية: التلميح غير مفتوح -> طلب التأكيد والخصم لأول مرة فقط
+            else {
+                val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+                builder.setTitle("Hints")
+                builder.setMessage("Show a clue sentence of the answer!\nCost : 1 hint")
 
-            val dialog = builder.create()
-            dialog.show()
-            dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
-            dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+                builder.setPositiveButton("OK") { dialog, _ ->
+                    handleHintUsage {
+                        // 1. فتح التلميح وحفظه في DB عبر الـ ViewModel
+                        logoHintViewModel.unlockInfoHint(currentLogoId)
+
+                        // 2. إظهار الدايلوج بالتلميح
+                        showBlackCustomDialog(infoMessage, R.drawable.wikipedia_pressed)
+                    }
+                    dialog.dismiss()
+                }
+                builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
+
+                val dialog = builder.create()
+                dialog.show()
+                dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+                dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+            }
         }
+
+//        binding.info.setOnClickListener {
+//            val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+//            builder.setTitle("Hints")
+//            builder.setMessage("Show a clue sentence of the answer!\nCost : 1 hint")
+//
+//            builder.setPositiveButton("OK") { dialog, _ ->
+//                handleHintUsage {
+//                    val infoMessage = currentLogo?.lo_info ?: "لا توجد معلومات متاحة لهذا النادي"
+//                    showBlackCustomDialog(infoMessage, R.drawable.wikipedia_pressed)
+//                }
+//                dialog.dismiss()
+//            }
+//            builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
+//
+//            val dialog = builder.create()
+//            dialog.show()
+//            dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//            dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//        }
 
         binding.okInfo.setOnClickListener { binding.infoPopup.visibility = View.GONE }
 

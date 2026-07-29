@@ -30,4 +30,10 @@ interface LogoHintDao {
 
     @Query("UPDATE logo_hints SET lo_hi_info = :status WHERE lo_hi_logo = :logoId")
     suspend fun updateInfoHint(logoId: Int, status: Int)
+
+    @Query("SELECT * FROM logo_hints WHERE lo_hi_logo = :logoId LIMIT 1")
+    suspend fun getHintForLogo(logoId: Int): LogoHintEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrUpdateHint(hint: LogoHintEntity)
 }

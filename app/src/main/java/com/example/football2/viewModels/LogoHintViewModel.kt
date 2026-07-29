@@ -100,12 +100,33 @@ class LogoHintViewModel(
         }
     }
 
+
+
     fun unlockInfoHint(logoId: Int) {
         viewModelScope.launch {
-            // تحديث قيمة info إلى 1 في الـ Repository / DAO
-            logoHintRepository.unlockInfoHint(logoId)
-            // إعادة تحميل حالة التلميحات للشعار ليتحدث الـ StateFlow تلقائياً
-            loadHintStateForLogo(logoId)
+            // 1. جلب السجل الحالي للشعار من DB
+            val existingEntity = logoHintRepository.getHintForLogo(logoId)
+
+            val updatedEntity = if (existingEntity != null) {
+                existingEntity.copy(info = 1)
+            } else {
+                LogoHintEntity(
+                    id = null,
+                    logoId = logoId,
+                    facebook = 0,
+                    twitter = 0,
+                    info = 1,
+                    hide = 0,
+                    letter = 0,
+                    player = 0
+                )
+            }
+
+            // 2. تحديث الـ State المباشر فوراً ليعرف التطبيق في المرة الثانية أن التلميح فُتح
+            _currentLogoHintState.value = updatedEntity
+
+            // 3. حفظ السجل في قاعدة البيانات
+            logoHintRepository.insertOrUpdateHint(updatedEntity)
         }
     }
 }

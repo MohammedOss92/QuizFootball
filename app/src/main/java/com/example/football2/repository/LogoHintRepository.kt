@@ -1,6 +1,7 @@
 package com.example.football2.repository
 
 import com.example.football2.dao.LogoHintDao
+import com.example.football2.entity.HintEntity
 import com.example.football2.entity.LogoHintEntity
 
 class LogoHintRepository(private val logoHintDao: LogoHintDao) {
@@ -121,5 +122,14 @@ class LogoHintRepository(private val logoHintDao: LogoHintDao) {
 
     suspend fun unlockInfoHint(logoId: Int) {
         logoHintDao.updateInfoHint(logoId, 1)
+    }
+
+    suspend fun getHintForLogo(logoId: Int): LogoHintEntity? {
+        return logoHintDao.getHintForLogo(logoId)
+    }
+
+    // الخطأ الثاني: استقبل كائن من نوع LogoHintEntity ومرره للـ DAO
+    suspend fun insertOrUpdateHint(hint: LogoHintEntity) {
+        logoHintDao.insertOrUpdateHint(hint)
     }
 }
