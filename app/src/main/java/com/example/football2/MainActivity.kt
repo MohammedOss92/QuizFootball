@@ -14,10 +14,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.football.R
 import com.example.football.databinding.ActivityMainBinding
 import com.example.football2.repository.LevelRepository
-import com.sarrawi.footballlogoquiz.data.AppDatabase
-import com.sarrawi.footballlogoquiz.ui.adapter.LevelAdapter
-import com.sarrawi.footballlogoquiz.ui.viewmodel.LevelViewModel
-import com.sarrawi.footballlogoquiz.ui.viewmodel.ViewModelFactory
+import com.example.football2.db.AppDatabase
+import com.example.football2.adabter.LevelAdapter
+import com.example.football2.viewModels.LevelViewModel
+import com.example.football2.viewModels.ViewModelFactory
 import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 

@@ -1,4 +1,5 @@
 package com.example.football2.dao
+
 import androidx.room.*
 import com.example.football2.entity.LogoHintEntity
 

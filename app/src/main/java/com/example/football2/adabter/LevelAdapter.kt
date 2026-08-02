@@ -1,4 +1,4 @@
-package com.sarrawi.footballlogoquiz.ui.adapter
+package com.example.football2.adabter
 
 import android.view.LayoutInflater
 import android.view.View

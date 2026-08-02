@@ -1,4 +1,4 @@
-package com.sarrawi.footballlogoquiz.ui.viewmodel
+package com.example.football2.viewModels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

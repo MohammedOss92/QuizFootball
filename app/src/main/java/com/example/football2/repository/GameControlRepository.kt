@@ -4,7 +4,6 @@ import com.example.football2.dao.HintDao
 import com.example.football2.dao.LevelDao
 import com.example.football2.dao.LogoDao
 import com.example.football2.dao.LogoHintDao
-import com.sarrawi.footballlogoquiz.data.dao.*
 
 class GameControlRepository(
     private val gameControlDao: GameControlDao,

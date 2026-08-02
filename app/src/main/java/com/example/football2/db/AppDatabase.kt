@@ -1,4 +1,4 @@
-package com.sarrawi.footballlogoquiz.data
+package com.example.football2.db
 
 import android.content.Context
 import androidx.room.Database
@@ -9,11 +9,11 @@ import com.example.football2.dao.HintDao
 import com.example.football2.dao.LevelDao
 import com.example.football2.dao.LogoDao
 import com.example.football2.dao.LogoHintDao
+import com.example.football2.dao.QuizDao
 import com.example.football2.entity.HintEntity
 import com.example.football2.entity.LevelEntity
 import com.example.football2.entity.LogoEntity
 import com.example.football2.entity.LogoHintEntity
-import com.sarrawi.footballlogoquiz.data.dao.QuizDao
 
 
 @Database(

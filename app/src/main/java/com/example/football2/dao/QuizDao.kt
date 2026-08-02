@@ -1,4 +1,4 @@
-package com.sarrawi.footballlogoquiz.data.dao
+package com.example.football2.dao
 
 import androidx.room.*
 import com.example.football2.entity.LevelEntity
