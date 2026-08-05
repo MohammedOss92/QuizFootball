@@ -109,9 +109,32 @@ interface QuizDao {
 
     // دالة محاكاة setLogoCompleted المركبة القديمة
     @Transaction
-    suspend fun completeLogoAndCheckLevel(logoId: Int, points: Int, levelId: Int) {
+    suspend fun comp2leteLogoAndCheckLevel(logoId: Int, points: Int, levelId: Int) {
         updateLogoCompletedState(logoId, points)
         val unsolvedCount = getUnsolvedLogosCount(levelId)
+        if (unsolvedCount == 0) {
+            setLevelCompleted(levelId)
+        }
+    }
+
+    // دالة محاكاة setLogoCompleted المركبة
+    @Transaction
+    suspend fun completeLogoAndCheckLevel(logoId: Int, points: Int, levelId: Int) {
+        // 1. تحديث حالة الشعار
+        updateLogoCompletedState(logoId, points)
+
+        // 2. حساب عدد الشعارات المحلولة
+        val totalLogos = getLogosCountByLevel(levelId)
+        val unsolvedCount = getUnsolvedLogosCount(levelId)
+        val solvedCount = totalLogos - unsolvedCount
+
+        // 🟢 3. الشرط الرئيسي: فتح المستوى التالي عند الوصول إلى 5 شعارات محلولة
+        if (solvedCount >= 2) {
+            val nextLevelId = levelId + 1
+            setLevelOpened(nextLevelId)
+        }
+
+        // 4. تعليم المستوى مكتمل بالكامل عند حل جميع الشعارات
         if (unsolvedCount == 0) {
             setLevelCompleted(levelId)
         }

@@ -34,7 +34,7 @@ class LevelAdapter(
                 true
             } else {
                 val previousItem = currentList[position - 1]
-                previousItem.completed_logos_count >= 5
+                previousItem.completed_logos_count >= 3
             }
 
             // 2. عرض اسم الدولة بحروف كبيرة كما في تطبيقك القديم

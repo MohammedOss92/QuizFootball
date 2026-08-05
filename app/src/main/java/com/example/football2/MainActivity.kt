@@ -84,7 +84,7 @@ class MainActivity : AppCompatActivity() {
                 // الوصول المباشر للمتغير داخل كلاس LevelWithStats بدون استخدام كلمة stats
                 val completedInPrevious = previousLevel.completed_logos_count
 
-                completedInPrevious >= 5
+                completedInPrevious >= 3
             }
 
             // 4. اتخاذ القرار بناءً على حالة القفل
@@ -128,6 +128,8 @@ class MainActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
+
+
 
 
 }

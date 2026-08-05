@@ -399,7 +399,7 @@ class QuizActivity : AppCompatActivity() {
 
                 binding.whistle.visibility = View.VISIBLE
 
-                hintViewModel.rewardHints(1)
+                hintViewModel.rewardHints(2)
                 Toast.makeText(applicationContext, "+1 Hint!", Toast.LENGTH_SHORT).show()
 
                 logoHintViewModel.submitCorrectAnswer(currentLogoId, 100, currentLevelId)
