@@ -371,6 +371,25 @@ class QuizActivity : AppCompatActivity() {
         }
     }
 
+    private fun addLette2rToAnswer(gridPosition: Int, letter: Char) {
+        if (isSelectingSlotForLetterHint) {
+            clearQuestionMarks()
+            isSelectingSlotForLetterHint = false
+        }
+
+        for (i in answerSlots.indices) {
+            val tvSlot = answerSlots[i]
+            if (tvSlot != null && tvSlot.text.isEmpty()) {
+                tvSlot.text = letter.toString()
+                tvSlot.setTextColor(android.graphics.Color.WHITE)
+                slotSourcePositions[i] = gridPosition
+                lettersAdapter.hideLetter(gridPosition)
+                checkAnswerComplete()
+                break
+            }
+        }
+    }
+
     private fun addLetterToAnswer(gridPosition: Int, letter: Char) {
         if (isSelectingSlotForLetterHint) {
             clearQuestionMarks()
@@ -380,6 +399,16 @@ class QuizActivity : AppCompatActivity() {
         for (i in answerSlots.indices) {
             val tvSlot = answerSlots[i]
             if (tvSlot != null && tvSlot.text.isEmpty()) {
+
+                // 🔊 تشغيل صوت الكيك عند اختيار الحرف
+                try {
+                    val mediaPlayer = android.media.MediaPlayer.create(this, R.raw.kick)
+                    mediaPlayer?.start()
+                    mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
                 tvSlot.text = letter.toString()
                 tvSlot.setTextColor(android.graphics.Color.WHITE)
                 slotSourcePositions[i] = gridPosition
@@ -406,7 +435,62 @@ class QuizActivity : AppCompatActivity() {
         }
     }
 
+
     private fun checkAnswerComplete() {
+        val currentEnteredAnswer = answerSlots.map { it?.text ?: "" }.joinToString("").trim()
+        val realAnswer = currentLogo?.lo_name?.replace(" ", "")?.trim() ?: ""
+
+        if (currentEnteredAnswer.length == realAnswer.length) {
+            if (currentEnteredAnswer.equals(realAnswer, ignoreCase = true)) {
+                // 🔊 1. تشغيل صوت الإجابة الصحيحة (right_crowd)
+                try {
+                    val mediaPlayer = android.media.MediaPlayer.create(this, R.raw.right_crowd)
+                    mediaPlayer?.start()
+                    mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                hintViewModel.rewardHints(2)
+                Toast.makeText(applicationContext, "+2 Hints!", Toast.LENGTH_SHORT).show()
+                logoHintViewModel.submitCorrectAnswer(currentLogoId, 100, currentLevelId)
+
+                binding.root.postDelayed({
+                    currentLogo?.let { showCompletedLayout(it) }
+                }, 300)
+
+            } else {
+                // 📉 خصم تلميح عند الإجابة الخاطئة
+                if (hintViewModel.currentHints.value > 0) {
+                    hintViewModel.useHint()
+                    Toast.makeText(applicationContext, "-1 Hint!", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(applicationContext, "إجابة خاطئة!", Toast.LENGTH_SHORT).show()
+                }
+
+                // 🔊 2. تشغيل صوت الإجابة الخاطئة (wrong_crowd)
+                try {
+                    val mediaPlayer = android.media.MediaPlayer.create(this, R.raw.wrong_crowd)
+                    mediaPlayer?.start()
+                    mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                binding.wrong.visibility = View.VISIBLE
+
+                // 🔄 إخفاء واجهة الخطأ وإعادة الأحرف الخاطئة إلى الشبكة بعد 1.5 ثانية
+                binding.root.postDelayed({
+                    binding.wrong.visibility = View.GONE
+
+                    for (i in answerSlots.indices) {
+                        removeLetterFromAnswer(i)
+                    }
+                }, 1500)
+            }
+        }
+    }
+    private fun ch2eckAnswerComplete() {
         val currentEnteredAnswer = answerSlots.map { it?.text ?: "" }.joinToString("").trim()
         val realAnswer = currentLogo?.lo_name?.replace(" ", "")?.trim() ?: ""
 
@@ -452,20 +536,7 @@ class QuizActivity : AppCompatActivity() {
                 binding.root.postDelayed({ binding.wrong.visibility = View.GONE }, 1500)
             }
         }
-//            else {
-//                // صوت الإجابة الخاطئة
-//                try {
-//                    val mediaPlayer = android.media.MediaPlayer.create(this, R.raw.wrong_crowd)
-//                    mediaPlayer?.start()
-//                    mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
-//                } catch (e: Exception) {
-//                    e.printStackTrace()
-//                }
-//
-//                binding.wrong.visibility = View.VISIBLE
-//                binding.root.postDelayed({ binding.wrong.visibility = View.GONE }, 1500)
-//            }
-//        }
+
     }
 
     private fun generateShuffledLetters(answer: String): List<Char> {
