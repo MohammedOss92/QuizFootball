@@ -3,6 +3,7 @@ package com.example.football2.dao
 import androidx.room.*
 import com.example.football2.entity.LevelEntity
 import com.example.football2.entity.LevelWithStats
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface LevelDao {
@@ -45,7 +46,17 @@ interface LevelDao {
         (SELECT COUNT(_loid) FROM logos WHERE lo_level = levels.le_web_id AND lo_completed = 1) AS completed_logos_count
         FROM levels ORDER BY le_order ASC
     """)
-    suspend fun getLevelsWithStats(): List<LevelWithStats>
+    suspend fun getLevelsW2ithStats(): List<LevelWithStats>
+
+
+    @Query("""
+        SELECT levels.*, 
+        (SELECT SUM(lo_points) FROM logos WHERE lo_level = levels.le_web_id AND lo_completed = 1) AS level_score,
+        (SELECT COUNT(_loid) FROM logos WHERE lo_level = levels.le_web_id) AS logos_count,
+        (SELECT COUNT(_loid) FROM logos WHERE lo_level = levels.le_web_id AND lo_completed = 1) AS completed_logos_count
+        FROM levels ORDER BY le_order ASC
+    """)
+    fun getLevelsWithStats(): Flow<List<LevelWithStats>>
 
     @Transaction
     suspend fun addNewLevel(country: String, flag: String, webId: Int) {

@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.football"
+    namespace = "com.example.football2"
     compileSdk = 36
 
     defaultConfig {

@@ -7,7 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
-import com.example.football.databinding.ActivityLogosBinding
+import com.example.football2.databinding.ActivityLogosBinding
 import com.example.football2.adabter.LogosAdapter
 import com.example.football2.db.AppDatabase
 import com.example.football2.repository.LogoRepository

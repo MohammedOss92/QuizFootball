@@ -7,8 +7,8 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.example.football.R
-import com.example.football.databinding.ItemLogoBinding
+import com.example.football2.R
+import com.example.football2.databinding.ItemLogoBinding
 import com.example.football2.entity.LogoEntity
 
 class LogosAdapter(

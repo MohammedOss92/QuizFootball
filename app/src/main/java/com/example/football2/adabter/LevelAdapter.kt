@@ -7,7 +7,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.example.football.databinding.ItemLevelBinding
+import com.example.football2.databinding.ItemLevelBinding
 import com.example.football2.entity.LevelWithStats
 
 class LevelAdapter(

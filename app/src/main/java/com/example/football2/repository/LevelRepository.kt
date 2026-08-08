@@ -2,6 +2,7 @@ package com.example.football2.repository
 
 import com.example.football2.dao.LevelDao
 import com.example.football2.entity.LevelWithStats
+import kotlinx.coroutines.flow.Flow
 
 class LevelRepository(private val levelDao: LevelDao) {
 
@@ -13,7 +14,11 @@ class LevelRepository(private val levelDao: LevelDao) {
 
     suspend fun getLastLevelWebId(): Int? = levelDao.getLastLevelWebId()
 
-    suspend fun getLevelsWithStats(): List<LevelWithStats> = levelDao.getLevelsWithStats()
+    suspend fun getLev2elsWithStats(): List<LevelWithStats> = levelDao.getLevelsW2ithStats()
+
+    fun getLevelsWithStats(): Flow<List<LevelWithStats>> {
+        return levelDao.getLevelsWithStats()
+    }
 
     suspend fun setLevelOpened(levelId: Int) {
         levelDao.setLevelOpened(levelId)

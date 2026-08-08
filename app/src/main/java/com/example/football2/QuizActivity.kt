@@ -10,8 +10,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.example.football.R
-import com.example.football.databinding.ActivityQuizBinding
+import com.example.football2.R
+import com.example.football2.databinding.ActivityQuizBinding
 import com.example.football2.adabter.LettersAdapter
 import com.example.football2.db.AppDatabase
 import com.example.football2.entity.LogoEntity
