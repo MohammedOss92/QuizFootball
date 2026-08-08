@@ -1,409 +1,813 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android">
-
-<RelativeLayout
-    android:id="@+id/root"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/field"
-    android:padding="0dp" >
-
-    <!-- تم إضافة ID هنا لكي تعمل خاصية layout_below في العناصر الأخرى بشكل صحيح -->
-    <include
-        android:id="@+id/titleBar"
-        layout="@layout/title_bar" />
-
-    <LinearLayout
-        android:id="@+id/player_popup"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/titleBar"
-        android:layout_centerHorizontal="true"
-        android:background="@drawable/hint_background"
-        android:gravity="center"
-        android:padding="20dp"
-        android:orientation="vertical"
-        android:visibility="gone" >
-
-        <ImageView
-            android:id="@+id/playerImg"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/player_hint_img" />
-
-        <TextView
-            android:id="@+id/playerName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="verdana"
-            android:text="Lionel Messi"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:textColor="#FFF"
-            android:textSize="25sp"
-            android:textStyle="bold"
-            android:typeface="sans" />
-
-        <Button
-            android:id="@+id/okPlayer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:background="@drawable/button_ok"
-            android:text="OK!"
-            android:textColor="#FFF"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/info_popup"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/titleBar"
-        android:layout_centerHorizontal="true"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
-        android:background="@drawable/hint_background"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:visibility="gone" >
-
-        <ImageView
-            android:id="@+id/infoImg"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:src="@drawable/info_hint_img" />
-
-        <TextView
-            android:id="@+id/infoText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:padding="10dp"
-            android:text="Founded in 1910"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:textColor="#FFF"
-            android:textSize="16sp" />
-
-        <Button
-            android:id="@+id/okInfo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:background="@drawable/button_ok"
-            android:text="OK!"
-            android:textColor="#FFF"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/rightHints"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentRight="true"
-        android:layout_below="@+id/titleBar"
-        android:layout_marginTop="10dp"
-        android:orientation="vertical"
-        android:visibility="gone" >
-
-        <ImageButton
-            android:id="@+id/hide"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="5dp"
-            android:background="@drawable/hint_clicked"
-            android:scaleType="fitXY"
-            android:src="@drawable/hide_hint" />
-
-        <ImageButton
-            android:id="@+id/letter"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="5dp"
-            android:background="@drawable/hint_clicked"
-            android:scaleType="fitXY"
-            android:src="@drawable/letter_hint" />
-
-        <ImageButton
-            android:id="@+id/player"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/hint_clicked"
-            android:scaleType="fitXY"
-            android:src="@drawable/player_hint" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/leftHints"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentLeft="true"
-        android:layout_below="@+id/titleBar"
-        android:layout_marginTop="10dp"
-        android:orientation="vertical"
-        android:visibility="gone" >
-
-        <ImageButton
-            android:id="@+id/facebook"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="5dp"
-            android:background="@drawable/hint_clicked"
-            android:scaleType="fitXY"
-            android:src="@drawable/facebook_hint" />
-
-        <ImageButton
-            android:id="@+id/twitter"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="5dp"
-            android:background="@drawable/hint_clicked"
-            android:scaleType="fitXY"
-            android:src="@drawable/twitter_hint" />
-
-        <ImageButton
-            android:id="@+id/info"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/hint_clicked"
-            android:scaleType="fitXY"
-            android:src="@drawable/info_hint" />
-    </LinearLayout>
-
-    <ImageView
-        android:id="@+id/logo"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_below="@+id/titleBar"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="10dp" />
-
-    <ImageView
-        android:id="@+id/whistle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/logo"
-        android:layout_centerInParent="true"
-        android:src="@drawable/whistle"
-        android:visibility="gone" />
-
-    <LinearLayout
-        android:id="@+id/spacesGrid1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/leftHints"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="10dp"
-        android:gravity="center"
-        android:orientation="horizontal" >
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/spacesGrid2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/spacesGrid1"
-        android:layout_centerHorizontal="true"
-        android:gravity="center"
-        android:orientation="horizontal" >
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/spacesGrid3"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/spacesGrid2"
-        android:layout_centerHorizontal="true"
-        android:gravity="center"
-        android:orientation="horizontal" >
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/spacesGrid4"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/spacesGrid3"
-        android:layout_centerHorizontal="true"
-        android:gravity="center"
-        android:orientation="horizontal" >
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/wrong"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:background="#FF0000"
-        android:gravity="center"
-        android:padding="15dp"
-        android:text="Wrong Answer!"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:textSize="30sp"
-        android:textStyle="bold"
-        android:visibility="gone" />
-
-
-    <!--        android:layout_above="@+id/adView"-->
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:ads="http://schemas.android.com/apk/res-auto">
 
     <RelativeLayout
-        android:id="@+id/completedLayout"
+        android:id="@+id/root"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/logo"
-        android:layout_centerHorizontal="true"
-        android:orientation="vertical"
-        android:visibility="gone" >
+        android:background="@drawable/field"
+        android:padding="0dp">
 
-        <TextView
-            android:id="@+id/loName"
+        <!-- شريط العنوان العلوي -->
+        <include
+            android:id="@+id/titleBar"
+            layout="@layout/title_bar" />
+
+        <!-- النافذة المنبثقة للاعب -->
+        <LinearLayout
+            android:id="@+id/player_popup"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_below="@+id/titleBar"
             android:layout_centerHorizontal="true"
-            android:text="LOGO NAME"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:textColor="#FFF"
-            android:textSize="28sp"
-            android:textStyle="bold" />
+            android:background="@drawable/hint_background"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="20dp"
+            android:visibility="gone">
 
-        <ImageButton
-            android:id="@+id/wikipedia"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_below="@+id/loName"
-            android:layout_centerHorizontal="true"
-            android:background="@drawable/button_wikipedia"
-            android:scaleType="fitXY" />
+            <ImageView
+                android:id="@+id/playerImg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/player_hint_img" />
 
-        <RelativeLayout
+            <TextView
+                android:id="@+id/playerName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="verdana"
+                android:text="Lionel Messi"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:textColor="#FFF"
+                android:textSize="25sp"
+                android:textStyle="bold"
+                android:typeface="sans" />
+
+            <Button
+                android:id="@+id/okPlayer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:background="@drawable/button_ok"
+                android:text="OK!"
+                android:textColor="#FFF"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- النافذة المنبثقة للـ Info -->
+        <LinearLayout
+            android:id="@+id/info_popup"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/wikipedia"
+            android:layout_below="@+id/titleBar"
+            android:layout_centerHorizontal="true"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:background="@drawable/hint_background"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/infoImg"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:src="@drawable/info_hint_img" />
+
+            <TextView
+                android:id="@+id/infoText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="10dp"
+                android:text="Founded in 1910"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:textColor="#FFF"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/okInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:background="@drawable/button_ok"
+                android:text="OK!"
+                android:textColor="#FFF"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- أزرار المساعدات اليمين (تعديل الظهور) -->
+        <LinearLayout
+            android:id="@+id/rightHints"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/titleBar"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <ImageButton
+                android:id="@+id/hide"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="5dp"
+                android:background="@drawable/hint_clicked"
+                android:scaleType="fitXY"
+                android:src="@drawable/hide_hint" />
+
+            <ImageButton
+                android:id="@+id/letter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="5dp"
+                android:background="@drawable/hint_clicked"
+                android:scaleType="fitXY"
+                android:src="@drawable/letter_hint" />
+
+            <ImageButton
+                android:id="@+id/player"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/hint_clicked"
+                android:scaleType="fitXY"
+                android:src="@drawable/player_hint" />
+        </LinearLayout>
+
+        <!-- أزرار المساعدات اليسار (تعديل الظهور) -->
+        <LinearLayout
+            android:id="@+id/leftHints"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/titleBar"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentLeft="true"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <ImageButton
+                android:id="@+id/facebook"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="5dp"
+                android:background="@drawable/hint_clicked"
+                android:scaleType="fitXY"
+                android:src="@drawable/facebook_hint" />
+
+            <ImageButton
+                android:id="@+id/twitter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="5dp"
+                android:background="@drawable/hint_clicked"
+                android:scaleType="fitXY"
+                android:src="@drawable/twitter_hint" />
+
+            <ImageButton
+                android:id="@+id/info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/hint_clicked"
+                android:scaleType="fitXY"
+                android:src="@drawable/info_hint" />
+        </LinearLayout>
+
+        <!-- الشعار الرئيسي (تعديل الحجم) -->
+        <ImageView
+            android:id="@+id/logo"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:layout_below="@+id/titleBar"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="10dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/no_image" />
+
+        <ImageView
+            android:id="@+id/whistle"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_centerInParent="true"
+            android:src="@drawable/whistle"
+            android:visibility="gone" />
+
+        <!-- 🔧 الإصلاح الأهم: ربط أسطر الإجابة بالشعار logo بدلاً من leftHints -->
+        <LinearLayout
+            android:id="@+id/spacesGrid1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/logo"
+            android:layout_centerHorizontal="true"
             android:layout_marginTop="15dp"
-            android:background="@drawable/gradient_completed"
-            android:padding="10dp" >
+            android:gravity="center"
+            android:orientation="horizontal" />
 
-            <LinearLayout
-                android:id="@+id/nextLogoButton"
+        <LinearLayout
+            android:id="@+id/spacesGrid2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/spacesGrid1"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="5dp"
+            android:gravity="center"
+            android:orientation="horizontal" />
+
+        <LinearLayout
+            android:id="@+id/spacesGrid3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/spacesGrid2"
+            android:layout_centerHorizontal="true"
+            android:gravity="center"
+            android:orientation="horizontal" />
+
+        <LinearLayout
+            android:id="@+id/spacesGrid4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/spacesGrid3"
+            android:layout_centerHorizontal="true"
+            android:gravity="center"
+            android:orientation="horizontal" />
+
+        <!-- نص الإجابة الخاطئة -->
+        <TextView
+            android:id="@+id/wrong"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:background="#FF0000"
+            android:gravity="center"
+            android:padding="15dp"
+            android:text="Wrong Answer!"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#FFFFFF"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <!-- واجهة النتيجة والإكمال (تعديل الارتفاع لمنع التداخل) -->
+        <RelativeLayout
+            android:id="@+id/completedLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/logo"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="10dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/loName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_alignParentRight="true"
-                android:layout_centerVertical="true"
-                android:background="@drawable/prev_next_background"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:paddingBottom="5dp"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp"
-                android:paddingTop="5dp" >
+                android:layout_centerHorizontal="true"
+                android:text="LOGO NAME"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:textColor="#FFF"
+                android:textSize="28sp"
+                android:textStyle="bold" />
 
-                <ImageView
-                    android:id="@+id/nextLogo"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:scaleType="fitXY" />
+            <ImageButton
+                android:id="@+id/wikipedia"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_below="@+id/loName"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="5dp"
+                android:background="@drawable/button_wikipedia"
+                android:scaleType="fitXY" />
 
-                <ImageView
-                    android:id="@+id/nextArrow"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:scaleType="fitXY"
-                    android:src="@drawable/next_arrow" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/medalPoints"
-                android:layout_width="wrap_content"
+            <RelativeLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:gravity="center"
-                android:orientation="vertical" >
+                android:layout_below="@+id/wikipedia"
+                android:layout_marginTop="15dp"
+                android:background="@drawable/gradient_completed"
+                android:padding="10dp">
 
-                <ImageView
-                    android:id="@+id/medal"
-                    android:layout_width="50dp"
-                    android:layout_height="50dp"
-                    android:src="@drawable/gold_medal" />
-
-                <TextView
-                    android:id="@+id/pointsRate"
+                <LinearLayout
+                    android:id="@+id/nextLogoButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="VERY GOOD!"
-                    android:textColor="#FFF"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/prev_next_background"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="5dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="5dp">
 
-                <TextView
-                    android:id="@+id/points"
+                    <ImageView
+                        android:id="@+id/nextLogo"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:scaleType="fitXY" />
+
+                    <ImageView
+                        android:id="@+id/nextArrow"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:scaleType="fitXY"
+                        android:src="@drawable/next_arrow" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/medalPoints"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="100 Pt"
-                    android:textColor="#ffff7f"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+                    android:layout_centerInParent="true"
+                    android:gravity="center"
+                    android:orientation="vertical">
 
-            <LinearLayout
-                android:id="@+id/prevLogoButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_alignParentLeft="true"
-                android:layout_centerVertical="true"
-                android:background="@drawable/prev_next_background"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:paddingBottom="5dp"
-                android:paddingLeft="10dp"
-                android:paddingRight="10dp"
-                android:paddingTop="5dp" >
+                    <ImageView
+                        android:id="@+id/medal"
+                        android:layout_width="50dp"
+                        android:layout_height="50dp"
+                        android:src="@drawable/gold_medal" />
 
-                <ImageView
-                    android:id="@+id/prevArrow"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:scaleType="fitXY"
-                    android:src="@drawable/prev_arrow" />
+                    <TextView
+                        android:id="@+id/pointsRate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="VERY GOOD!"
+                        android:textColor="#FFF"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
 
-                <ImageView
-                    android:id="@+id/prevLogo"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:scaleType="fitXY" />
-            </LinearLayout>
+                    <TextView
+                        android:id="@+id/points"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="100 Pt"
+                        android:textColor="#ffff7f"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/prevLogoButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/prev_next_background"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="5dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="5dp">
+
+                    <ImageView
+                        android:id="@+id/prevArrow"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:scaleType="fitXY"
+                        android:src="@drawable/prev_arrow" />
+
+                    <ImageView
+                        android:id="@+id/prevLogo"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:scaleType="fitXY" />
+                </LinearLayout>
+            </RelativeLayout>
         </RelativeLayout>
+
+        <!-- شبكة أزرار الأحرف الكيبورد السفلي -->
+        <GridView
+            android:id="@+id/ballsGrid"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginBottom="12dp"
+            android:columnWidth="32dp"
+            android:gravity="center"
+            android:horizontalSpacing="5dp"
+            android:listSelector="@drawable/letter_grid_selector"
+            android:numColumns="9"
+            android:stretchMode="columnWidth"
+            android:verticalSpacing="10dp" />
+
     </RelativeLayout>
+</layout>
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<layout xmlns:android="http://schemas.android.com/apk/res/android">-->
 
-    <GridView
-        android:id="@+id/ballsGrid"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+<!--<RelativeLayout-->
+<!--    android:id="@+id/root"-->
+<!--    android:layout_width="match_parent"-->
+<!--    android:layout_height="match_parent"-->
+<!--    android:background="@drawable/field"-->
+<!--    android:padding="0dp" >-->
 
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
+<!--    &lt;!&ndash; تم إضافة ID هنا لكي تعمل خاصية layout_below في العناصر الأخرى بشكل صحيح &ndash;&gt;-->
+<!--    <include-->
+<!--        android:id="@+id/titleBar"-->
+<!--        layout="@layout/title_bar" />-->
 
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
-        android:layout_marginBottom="9dp"
-
-        android:columnWidth="32dp"
-        android:gravity="center"
-        android:horizontalSpacing="5dp"
-        android:listSelector="@drawable/letter_grid_selector"
-        android:numColumns="9"
-        android:stretchMode="columnWidth"
-        android:verticalSpacing="10dp" />
-    <!--    <com.google.android.gms.ads.AdView-->
-<!--        android:id="@+id/adView"-->
+<!--    <LinearLayout-->
+<!--        android:id="@+id/player_popup"-->
 <!--        android:layout_width="wrap_content"-->
 <!--        android:layout_height="wrap_content"-->
+<!--        android:layout_below="@+id/titleBar"-->
+<!--        android:layout_centerHorizontal="true"-->
+<!--        android:background="@drawable/hint_background"-->
+<!--        android:gravity="center"-->
+<!--        android:padding="20dp"-->
+<!--        android:orientation="vertical"-->
+<!--        android:visibility="gone" >-->
+
+<!--        <ImageView-->
+<!--            android:id="@+id/playerImg"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:src="@drawable/player_hint_img" />-->
+
+<!--        <TextView-->
+<!--            android:id="@+id/playerName"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:fontFamily="verdana"-->
+<!--            android:text="Lionel Messi"-->
+<!--            android:textAppearance="?android:attr/textAppearanceLarge"-->
+<!--            android:textColor="#FFF"-->
+<!--            android:textSize="25sp"-->
+<!--            android:textStyle="bold"-->
+<!--            android:typeface="sans" />-->
+
+<!--        <Button-->
+<!--            android:id="@+id/okPlayer"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:background="@drawable/button_ok"-->
+<!--            android:text="OK!"-->
+<!--            android:textColor="#FFF"-->
+<!--            android:textStyle="bold" />-->
+<!--    </LinearLayout>-->
+
+<!--    <LinearLayout-->
+<!--        android:id="@+id/info_popup"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_below="@+id/titleBar"-->
+<!--        android:layout_centerHorizontal="true"-->
+<!--        android:layout_marginLeft="10dp"-->
+<!--        android:layout_marginRight="10dp"-->
+<!--        android:background="@drawable/hint_background"-->
+<!--        android:gravity="center"-->
+<!--        android:orientation="vertical"-->
+<!--        android:visibility="gone" >-->
+
+<!--        <ImageView-->
+<!--            android:id="@+id/infoImg"-->
+<!--            android:layout_width="50dp"-->
+<!--            android:layout_height="50dp"-->
+<!--            android:src="@drawable/info_hint_img" />-->
+
+<!--        <TextView-->
+<!--            android:id="@+id/infoText"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:gravity="center"-->
+<!--            android:padding="10dp"-->
+<!--            android:text="Founded in 1910"-->
+<!--            android:textAppearance="?android:attr/textAppearanceLarge"-->
+<!--            android:textColor="#FFF"-->
+<!--            android:textSize="16sp" />-->
+
+<!--        <Button-->
+<!--            android:id="@+id/okInfo"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_margin="5dp"-->
+<!--            android:background="@drawable/button_ok"-->
+<!--            android:text="OK!"-->
+<!--            android:textColor="#FFF"-->
+<!--            android:textStyle="bold" />-->
+<!--    </LinearLayout>-->
+
+<!--    <LinearLayout-->
+<!--        android:id="@+id/rightHints"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_alignParentEnd="true"-->
+<!--        android:layout_alignParentRight="true"-->
+<!--        android:layout_below="@+id/titleBar"-->
+<!--        android:layout_marginTop="10dp"-->
+<!--        android:orientation="vertical"-->
+<!--        android:visibility="gone" >-->
+
+<!--        <ImageButton-->
+<!--            android:id="@+id/hide"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginBottom="5dp"-->
+<!--            android:background="@drawable/hint_clicked"-->
+<!--            android:scaleType="fitXY"-->
+<!--            android:src="@drawable/hide_hint" />-->
+
+<!--        <ImageButton-->
+<!--            android:id="@+id/letter"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginBottom="5dp"-->
+<!--            android:background="@drawable/hint_clicked"-->
+<!--            android:scaleType="fitXY"-->
+<!--            android:src="@drawable/letter_hint" />-->
+
+<!--        <ImageButton-->
+<!--            android:id="@+id/player"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:background="@drawable/hint_clicked"-->
+<!--            android:scaleType="fitXY"-->
+<!--            android:src="@drawable/player_hint" />-->
+<!--    </LinearLayout>-->
+
+<!--    <LinearLayout-->
+<!--        android:id="@+id/leftHints"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_alignParentStart="true"-->
+<!--        android:layout_alignParentLeft="true"-->
+<!--        android:layout_below="@+id/titleBar"-->
+<!--        android:layout_marginTop="10dp"-->
+<!--        android:orientation="vertical"-->
+<!--        android:visibility="gone" >-->
+
+<!--        <ImageButton-->
+<!--            android:id="@+id/facebook"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginBottom="5dp"-->
+<!--            android:background="@drawable/hint_clicked"-->
+<!--            android:scaleType="fitXY"-->
+<!--            android:src="@drawable/facebook_hint" />-->
+
+<!--        <ImageButton-->
+<!--            android:id="@+id/twitter"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginBottom="5dp"-->
+<!--            android:background="@drawable/hint_clicked"-->
+<!--            android:scaleType="fitXY"-->
+<!--            android:src="@drawable/twitter_hint" />-->
+
+<!--        <ImageButton-->
+<!--            android:id="@+id/info"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:background="@drawable/hint_clicked"-->
+<!--            android:scaleType="fitXY"-->
+<!--            android:src="@drawable/info_hint" />-->
+<!--    </LinearLayout>-->
+
+<!--    <ImageView-->
+<!--        android:id="@+id/logo"-->
+<!--        android:layout_width="100dp"-->
+<!--        android:layout_height="100dp"-->
+<!--        android:layout_below="@+id/titleBar"-->
+<!--        android:layout_centerHorizontal="true"-->
+<!--        android:src="@drawable/no_image"-->
+<!--        android:layout_marginTop="10dp" />-->
+
+<!--    <ImageView-->
+<!--        android:id="@+id/whistle"-->
+<!--        android:layout_width="120dp"-->
+<!--        android:layout_height="120dp"-->
+<!--        android:layout_centerInParent="true"-->
+<!--        android:src="@drawable/whistle"-->
+<!--        android:visibility="gone" />-->
+
+<!--    <LinearLayout-->
+<!--        android:id="@+id/spacesGrid1"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_below="@+id/leftHints"-->
+<!--        android:layout_centerHorizontal="true"-->
+<!--        android:layout_marginTop="10dp"-->
+<!--        android:gravity="center"-->
+<!--        android:orientation="horizontal" >-->
+<!--    </LinearLayout>-->
+
+<!--    <LinearLayout-->
+<!--        android:id="@+id/spacesGrid2"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_below="@+id/spacesGrid1"-->
+<!--        android:layout_centerHorizontal="true"-->
+<!--        android:gravity="center"-->
+<!--        android:orientation="horizontal" >-->
+<!--    </LinearLayout>-->
+
+<!--    <LinearLayout-->
+<!--        android:id="@+id/spacesGrid3"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_below="@+id/spacesGrid2"-->
+<!--        android:layout_centerHorizontal="true"-->
+<!--        android:gravity="center"-->
+<!--        android:orientation="horizontal" >-->
+<!--    </LinearLayout>-->
+
+<!--    <LinearLayout-->
+<!--        android:id="@+id/spacesGrid4"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_below="@+id/spacesGrid3"-->
+<!--        android:layout_centerHorizontal="true"-->
+<!--        android:gravity="center"-->
+<!--        android:orientation="horizontal" >-->
+<!--    </LinearLayout>-->
+
+<!--    <TextView-->
+<!--        android:id="@+id/wrong"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_centerInParent="true"-->
+<!--        android:background="#FF0000"-->
+<!--        android:gravity="center"-->
+<!--        android:padding="15dp"-->
+<!--        android:text="Wrong Answer!"-->
+<!--        android:textAppearance="?android:attr/textAppearanceLarge"-->
+<!--        android:textSize="30sp"-->
+<!--        android:textStyle="bold"-->
+<!--        android:visibility="gone" />-->
+
+
+<!--    &lt;!&ndash;        android:layout_above="@+id/adView"&ndash;&gt;-->
+
+<!--    <RelativeLayout-->
+<!--        android:id="@+id/completedLayout"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="match_parent"-->
+<!--        android:layout_below="@+id/logo"-->
+<!--        android:layout_centerHorizontal="true"-->
+<!--        android:orientation="vertical"-->
+<!--        android:visibility="gone" >-->
+
+<!--        <TextView-->
+<!--            android:id="@+id/loName"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_centerHorizontal="true"-->
+<!--            android:text="LOGO NAME"-->
+<!--            android:textAppearance="?android:attr/textAppearanceLarge"-->
+<!--            android:textColor="#FFF"-->
+<!--            android:textSize="28sp"-->
+<!--            android:textStyle="bold" />-->
+
+<!--        <ImageButton-->
+<!--            android:id="@+id/wikipedia"-->
+<!--            android:layout_width="40dp"-->
+<!--            android:layout_height="40dp"-->
+<!--            android:layout_below="@+id/loName"-->
+<!--            android:layout_centerHorizontal="true"-->
+<!--            android:background="@drawable/button_wikipedia"-->
+<!--            android:scaleType="fitXY" />-->
+
+<!--        <RelativeLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_below="@+id/wikipedia"-->
+<!--            android:layout_marginTop="15dp"-->
+<!--            android:background="@drawable/gradient_completed"-->
+<!--            android:padding="10dp" >-->
+
+<!--            <LinearLayout-->
+<!--                android:id="@+id/nextLogoButton"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_alignParentEnd="true"-->
+<!--                android:layout_alignParentRight="true"-->
+<!--                android:layout_centerVertical="true"-->
+<!--                android:background="@drawable/prev_next_background"-->
+<!--                android:gravity="center"-->
+<!--                android:orientation="horizontal"-->
+<!--                android:paddingBottom="5dp"-->
+<!--                android:paddingLeft="10dp"-->
+<!--                android:paddingRight="10dp"-->
+<!--                android:paddingTop="5dp" >-->
+
+<!--                <ImageView-->
+<!--                    android:id="@+id/nextLogo"-->
+<!--                    android:layout_width="30dp"-->
+<!--                    android:layout_height="30dp"-->
+<!--                    android:scaleType="fitXY" />-->
+
+<!--                <ImageView-->
+<!--                    android:id="@+id/nextArrow"-->
+<!--                    android:layout_width="20dp"-->
+<!--                    android:layout_height="20dp"-->
+<!--                    android:scaleType="fitXY"-->
+<!--                    android:src="@drawable/next_arrow" />-->
+<!--            </LinearLayout>-->
+
+<!--            <LinearLayout-->
+<!--                android:id="@+id/medalPoints"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_centerInParent="true"-->
+<!--                android:gravity="center"-->
+<!--                android:orientation="vertical" >-->
+
+<!--                <ImageView-->
+<!--                    android:id="@+id/medal"-->
+<!--                    android:layout_width="50dp"-->
+<!--                    android:layout_height="50dp"-->
+<!--                    android:src="@drawable/gold_medal" />-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/pointsRate"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="VERY GOOD!"-->
+<!--                    android:textColor="#FFF"-->
+<!--                    android:textSize="22sp"-->
+<!--                    android:textStyle="bold" />-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/points"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="100 Pt"-->
+<!--                    android:textColor="#ffff7f"-->
+<!--                    android:textSize="16sp"-->
+<!--                    android:textStyle="bold" />-->
+<!--            </LinearLayout>-->
+
+<!--            <LinearLayout-->
+<!--                android:id="@+id/prevLogoButton"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_alignParentStart="true"-->
+<!--                android:layout_alignParentLeft="true"-->
+<!--                android:layout_centerVertical="true"-->
+<!--                android:background="@drawable/prev_next_background"-->
+<!--                android:gravity="center"-->
+<!--                android:orientation="horizontal"-->
+<!--                android:paddingBottom="5dp"-->
+<!--                android:paddingLeft="10dp"-->
+<!--                android:paddingRight="10dp"-->
+<!--                android:paddingTop="5dp" >-->
+
+<!--                <ImageView-->
+<!--                    android:id="@+id/prevArrow"-->
+<!--                    android:layout_width="20dp"-->
+<!--                    android:layout_height="20dp"-->
+<!--                    android:scaleType="fitXY"-->
+<!--                    android:src="@drawable/prev_arrow" />-->
+
+<!--                <ImageView-->
+<!--                    android:id="@+id/prevLogo"-->
+<!--                    android:layout_width="30dp"-->
+<!--                    android:layout_height="30dp"-->
+<!--                    android:scaleType="fitXY" />-->
+<!--            </LinearLayout>-->
+<!--        </RelativeLayout>-->
+<!--    </RelativeLayout>-->
+
+<!--    <GridView-->
+<!--        android:id="@+id/ballsGrid"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+
 <!--        android:layout_alignParentBottom="true"-->
 <!--        android:layout_centerHorizontal="true"-->
-<!--        android:layout_gravity="center"-->
-<!--        ads:adSize="BANNER"-->
-<!--        ads:adUnitId="@string/adBannerUnitId" />-->
 
-</RelativeLayout>
-</layout>
+<!--        android:layout_marginLeft="10dp"-->
+<!--        android:layout_marginRight="10dp"-->
+<!--        android:layout_marginBottom="9dp"-->
+
+<!--        android:columnWidth="32dp"-->
+<!--        android:gravity="center"-->
+<!--        android:horizontalSpacing="5dp"-->
+<!--        android:listSelector="@drawable/letter_grid_selector"-->
+<!--        android:numColumns="9"-->
+<!--        android:stretchMode="columnWidth"-->
+<!--        android:verticalSpacing="10dp" />-->
+<!--    &lt;!&ndash;    <com.google.android.gms.ads.AdView&ndash;&gt;-->
+<!--&lt;!&ndash;        android:id="@+id/adView"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_width="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_alignParentBottom="true"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_centerHorizontal="true"&ndash;&gt;-->
+<!--&lt;!&ndash;        android:layout_gravity="center"&ndash;&gt;-->
+<!--&lt;!&ndash;        ads:adSize="BANNER"&ndash;&gt;-->
+<!--&lt;!&ndash;        ads:adUnitId="@string/adBannerUnitId" />&ndash;&gt;-->
+
+<!--</RelativeLayout>-->
+<!--</layout>-->
