@@ -12,7 +12,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.example.football2.R
 import com.example.football2.databinding.ActivityQuizBinding
 import com.example.football2.adabter.LettersAdapter
 import com.example.football2.db.AppDatabase
@@ -294,7 +293,7 @@ class QuizActivity : AppCompatActivity() {
                 }
                 dialog.dismiss()
             }
-
+//
             builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
 
             val dialog = builder.create()
