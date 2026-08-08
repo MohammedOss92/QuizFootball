@@ -426,6 +426,14 @@ class QuizActivity : AppCompatActivity() {
                 return
             }
 
+            try {
+                val mediaPlayer = android.media.MediaPlayer.create(this, R.raw.space)
+                mediaPlayer?.start()
+                mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
             val originalGridPos = slotSourcePositions[slotIndex]
             if (originalGridPos != null) {
                 lettersAdapter.showLetter(originalGridPos)
