@@ -311,11 +311,11 @@
                         android:scaleType="fitXY" />
 
                     <ImageView
-                        android:id="@+id/nextArrow"
+                        android:id="@+id/prevArrow"
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:scaleType="fitXY"
-                        android:src="@drawable/next_arrow" />
+                        android:src="@drawable/prev_arrow" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -367,11 +367,13 @@
                     android:paddingBottom="5dp">
 
                     <ImageView
-                        android:id="@+id/prevArrow"
+                        android:id="@+id/nextArrow"
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:scaleType="fitXY"
-                        android:src="@drawable/prev_arrow" />
+                        android:src="@drawable/next_arrow" />
+
+
 
                     <ImageView
                         android:id="@+id/prevLogo"

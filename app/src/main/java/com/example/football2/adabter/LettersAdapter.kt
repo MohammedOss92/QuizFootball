@@ -1,10 +1,10 @@
 package com.example.football2.adabter
 
-
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AnimationUtils
 import android.widget.BaseAdapter
 import android.widget.TextView
 import com.example.football2.R
@@ -16,11 +16,11 @@ class LettersAdapter(
 ) : BaseAdapter() {
 
     private val hiddenPositions = HashSet<Int>()
+    private val animatingPositions = HashSet<Int>()
 
     override fun getCount(): Int = letters.size
     override fun getItem(position: Int): Char = letters[position]
     override fun getItemId(position: Int): Long = position.toLong()
-
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
         val view: View
@@ -38,18 +38,47 @@ class LettersAdapter(
         val letter = getItem(position)
         viewHolder.tvLetter.text = letter.toString()
 
-        // 🟢 إضافة خلفية خضراء للمربعات بالأسفل لمنع اختفائها 🟢
-        // يمكنك تعديل اللون #7CB342 إلى أي درجة لون تفضلها
         val shape = android.graphics.drawable.GradientDrawable().apply {
             shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-            setColor(android.graphics.Color.parseColor("#7CB342")) // اللون الأخضر للوحة
-            cornerRadius = 12f // درجة انحناء الزوايا للمربع
+            setColor(android.graphics.Color.parseColor("#7CB342"))
+            cornerRadius = 12f
         }
         viewHolder.tvLetter.background = shape
 
+        // 🛑 1. إلغاء أي أنيميشن قديم ومترسب من عمليات Recycle السابقة فوراً
+        view.clearAnimation()
+
+        // 🛑 2. تطبيق حالة الرؤية بدقة لمنع ظهور الحروف المخفية نهائياً
         if (hiddenPositions.contains(position)) {
-            view.visibility = View.INVISIBLE
+
+            // إذا كان هذا الموضع يحتاج أنيميشن (تم النقر على زر التلميح للتو)
+            if (animatingPositions.contains(position)) {
+                animatingPositions.remove(position)
+
+                // التأكد من رؤية العنصر أثناء تشغيل الأنيميشن
+                view.visibility = View.VISIBLE
+
+                // تشغيل الأنيميشن في الدورة القادمة للـ UI لمنع الفلشر
+                view.post {
+                    val animBlink = AnimationUtils.loadAnimation(context, R.anim.blink)
+                    animBlink.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
+                        override fun onAnimationStart(animation: android.view.animation.Animation?) {}
+
+                        override fun onAnimationEnd(animation: android.view.animation.Animation?) {
+                            // فور انتهاء الأنيميشن نقوم بالإخفاء التام
+                            view.visibility = View.INVISIBLE
+                        }
+
+                        override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
+                    })
+                    view.startAnimation(animBlink)
+                }
+            } else {
+                // إذا كان مخفياً سابقاً (بدون أنيميشن) يُخفى فوراً وبشكل قاطع
+                view.visibility = View.INVISIBLE
+            }
         } else {
+            // الحروف العادية النشطة
             view.visibility = View.VISIBLE
         }
 
@@ -61,6 +90,7 @@ class LettersAdapter(
 
         return view
     }
+
     fun hideLetter(position: Int) {
         hiddenPositions.add(position)
         notifyDataSetChanged()
@@ -68,12 +98,14 @@ class LettersAdapter(
 
     fun showLetter(position: Int) {
         hiddenPositions.remove(position)
+        animatingPositions.remove(position)
         notifyDataSetChanged()
     }
 
     fun updateLetters(newLetters: List<Char>) {
         this.letters = newLetters
         hiddenPositions.clear()
+        animatingPositions.clear()
         notifyDataSetChanged()
     }
 
@@ -89,38 +121,93 @@ class LettersAdapter(
     private class ViewHolder(val tvLetter: TextView)
 
     /**
-     * دالة القنبلة: تقوم بإخفاء الحروف الخاطئة من لوحة الحروف السفلية
-     * @param correctAnswer الإجابة الصحيحة القادمة من قاعدة البيانات (lo_name)
+     * دالة التلميح عند الضغط على زر الإخفاء: تُفعل الأنيميشن لمرة واحدة فقط
      */
-    /**
-     * دالة القنبلة: تقوم بإخفاء الحروف الخاطئة من لوحة الحروف السفلية
-     * @param correctAnswer الإجابة الصحيحة القادمة من قاعدة البيانات (lo_name)
-     */
-    fun removeWrongLetters(correctAnswer: String) {
-        // 1. تحويل الإجابة إلى حروف كبيرة لتجنب الاختلافات بين الحروف الكبيرة والصغيرة
+    fun removeW2rongLetters(correctAnswer: String) {
         val upperAnswer = correctAnswer.uppercase()
-
-        // 2. استخراج الحروف الصحيحة فقط بدون المسافات
         val validLetters = upperAnswer.filter { it != ' ' }.toSet()
 
-        // 3. المرور على قائمة الحروف الحالية (letters) الممررة للـ Adapter
         for (i in letters.indices) {
             val letterChar = letters[i].uppercaseChar()
 
-            // إذا كان الحرف المعروض غير موجود في حروف الإجابة الصحيحة
-            if (!validLetters.contains(letterChar)) {
-                // نقوم بإضافته إلى قائمة العناصر المخفية (hiddenPositions)
+            if (!validLetters.contains(letterChar) && !hiddenPositions.contains(i)) {
                 hiddenPositions.add(i)
+                animatingPositions.add(i) // إضافة للأنيميشن
+            }
+        }
+        notifyDataSetChanged()
+    }
+    fun removeWrongLetters(correctAnswer: String) {
+        // 1. حساب تكرار كل حرف مطلوب في الإجابة الصحيحة
+        val requiredLettersCount = mutableMapOf<Char, Int>()
+        for (char in correctAnswer.uppercase()) {
+            if (char != ' ') {
+                requiredLettersCount[char] = requiredLettersCount.getOrDefault(char, 0) + 1
             }
         }
 
-        // 4. تحديث الـ GridView لإعادة رسم الحروف وإخفاء الخاطئة فوراً
-        notifyDataSetChanged()
+        // 2. المرور على حروف الشبكة وتحديد الزائد/الخاطئ منها
+        for (i in letters.indices) {
+            val letterChar = letters[i].uppercaseChar()
+            val countNeeded = requiredLettersCount.getOrDefault(letterChar, 0)
 
+            if (countNeeded > 0) {
+                // الحرف مطلوب، نستهلك نسخة واحدة منه ونتركه ظاهراً
+                requiredLettersCount[letterChar] = countNeeded - 1
+            } else {
+                // الحرف زائد أو خاطئ -> نقوم بإخفائه
+                if (!hiddenPositions.contains(i)) {
+                    hiddenPositions.add(i)
+                    animatingPositions.add(i) // تفعيل الأنيميشن
+                }
+            }
+        }
+        notifyDataSetChanged()
     }
+
+    /**
+     * دالة التلميح عند العودة للشاشة: إخفاء بدون أنيميشن
+     */
+    fun applyHideHi2ntWithoutAnimation(correctAnswer: String) {
+        val upperAnswer = correctAnswer.uppercase()
+        val validLetters = upperAnswer.filter { it != ' ' }.toSet()
+
+        for (i in letters.indices) {
+            val letterChar = letters[i].uppercaseChar()
+
+            if (!validLetters.contains(letterChar)) {
+                hiddenPositions.add(i)
+            }
+        }
+        animatingPositions.clear() // تفريغ قائمة الأنيميشن
+        notifyDataSetChanged()
+    }
+    fun applyHideHintWithoutAnimation(correctAnswer: String) {
+        val requiredLettersCount = mutableMapOf<Char, Int>()
+        for (char in correctAnswer.uppercase()) {
+            if (char != ' ') {
+                requiredLettersCount[char] = requiredLettersCount.getOrDefault(char, 0) + 1
+            }
+        }
+
+        for (i in letters.indices) {
+            val letterChar = letters[i].uppercaseChar()
+            val countNeeded = requiredLettersCount.getOrDefault(letterChar, 0)
+
+            if (countNeeded > 0) {
+                requiredLettersCount[letterChar] = countNeeded - 1
+            } else {
+                hiddenPositions.add(i)
+            }
+        }
+        animatingPositions.clear()
+        notifyDataSetChanged()
+    }
+
     fun getLetterAt(position: Int): Char {
         return letters[position]
     }
+
     fun getItemCountSize(): Int {
         return letters.size
     }

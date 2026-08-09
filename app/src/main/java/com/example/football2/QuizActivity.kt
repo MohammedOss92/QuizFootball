@@ -186,7 +186,8 @@ class QuizActivity : AppCompatActivity() {
         if (hintState?.hide == 1 && ::lettersAdapter.isInitialized) {
             val correctAnswer = currentLogo?.lo_name
             if (!correctAnswer.isNullOrEmpty()) {
-                lettersAdapter.removeWrongLetters(correctAnswer)
+                // 💡 إخفاء الحروف الخاطئة بدون أنيميشن عند تحميل الحالة المخزنة
+                lettersAdapter.applyHideHintWithoutAnimation(correctAnswer)
             }
         }
     }
@@ -275,6 +276,33 @@ class QuizActivity : AppCompatActivity() {
             dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
         }
 
+//        binding.hide.setOnClickListener {
+//            val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+//            builder.setTitle("Hints")
+//            builder.setMessage("Remove the wrong letters!\nCost : 1 hint")
+//
+//            builder.setPositiveButton("OK") { dialog, _ ->
+//                handleHintUsage {
+//                    val correctAnswer = currentLogo?.lo_name
+//                    if (!correctAnswer.isNullOrEmpty()) {
+//                        if (::lettersAdapter.isInitialized) {
+//                            lettersAdapter.removeWrongLetters(correctAnswer)
+//                        }
+//                        updateHideButtonState(true)
+//                        logoHintViewModel.unlockHideHint(currentLogoId)
+//                    }
+//                }
+//                dialog.dismiss()
+//            }
+////
+//            builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
+//
+//            val dialog = builder.create()
+//            dialog.show()
+//            dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//            dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//        }
+
         binding.hide.setOnClickListener {
             val builder = androidx.appcompat.app.AlertDialog.Builder(this)
             builder.setTitle("Hints")
@@ -287,13 +315,28 @@ class QuizActivity : AppCompatActivity() {
                         if (::lettersAdapter.isInitialized) {
                             lettersAdapter.removeWrongLetters(correctAnswer)
                         }
+
+                        // 1. 🔊 تشغيل صوت الانفجار R.raw.explosion
+                        try {
+                            val mediaPlayer = android.media.MediaPlayer.create(this, R.raw.explosion)
+                            mediaPlayer?.start()
+                            mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+
+                        // 2. ✨ تشغيل أنيميشن R.anim.blink على زر الإخفاء
+                        val animBlink = AnimationUtils.loadAnimation(applicationContext, R.anim.blink)
+                        binding.hide.startAnimation(animBlink)
+
+                        // 3. تحديث حالة الزر وتطبيق الحفظ
                         updateHideButtonState(true)
                         logoHintViewModel.unlockHideHint(currentLogoId)
                     }
                 }
                 dialog.dismiss()
             }
-//
+
             builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
 
             val dialog = builder.create()
@@ -609,9 +652,11 @@ class QuizActivity : AppCompatActivity() {
 
     private fun updateHideButtonState(isUsed: Boolean) {
         if (isUsed) {
+            binding.hide.isSelected = true
             binding.hide.isEnabled = false
             binding.hide.alpha = 0.5f
         } else {
+            binding.hide.isSelected = false
             binding.hide.isEnabled = true
             binding.hide.alpha = 1.0f
         }
