@@ -1,7 +1,10 @@
 package com.example.football2.viewModels
 
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
 import com.example.football2.entity.LogoHintEntity
 import com.example.football2.repository.GameControlRepository
@@ -66,6 +69,71 @@ class LogoHintViewModel(
 
             val state = logoHintRepository.getHintStateForLogo(logoId)
             _currentLogoHintState.value = state
+        }
+    }
+
+
+    private val _currentLogoId = MutableLiveData<Int>()
+
+    // SwitchMap يضمن تحديث الـ LiveData تلقائياً فور تغيير الـ logoId
+    val logoHintState: LiveData<LogoHintEntity?> = _currentLogoId.switchMap { id ->
+        logoHintRepository.getLogoHintStateLiveData(id)
+    }
+
+    fun setLogoId(logoId: Int) {
+        _currentLogoId.value = logoId
+    }
+
+    fun unlockPlay2erHint(logoId: Int) {
+        viewModelScope.launch {
+            // 1. جلب السجل الحالي للشعار من DB
+            val existingEntity = logoHintRepository.getHintForLogo(logoId)
+
+            val updatedEntity = if (existingEntity != null) {
+                existingEntity.copy(player = 1)
+            } else {
+                LogoHintEntity(
+                    id = null,
+                    logoId = logoId,
+                    facebook = 0,
+                    twitter = 0,
+                    info = 0,
+                    hide = 0,
+                    letter = 0,
+                    player = 1
+                )
+            }
+
+            // 2. تحديث الـ State المباشر فوراً
+            _currentLogoHintState.value = updatedEntity
+
+            // 3. حفظ السجل في قاعدة البيانات
+            logoHintRepository.insertOrUpdateHint(updatedEntity)
+        }
+    }
+
+    fun unlockPlayerHint(logoId: Int) {
+        viewModelScope.launch {
+            // 1. جلب السجل الحالي للشعار من DB
+            val existingEntity = logoHintRepository.getHintForLogo(logoId)
+
+            // 2. استخدام ?: بدلاً من if-else
+            val updatedEntity = existingEntity?.copy(player = 1) ?: LogoHintEntity(
+                id = null,
+                logoId = logoId,
+                facebook = 0,
+                twitter = 0,
+                info = 0,
+                hide = 0,
+                letter = 0,
+                player = 1
+            )
+
+            // 3. تحديث الـ State المباشر فوراً
+            _currentLogoHintState.value = updatedEntity
+
+            // 4. حفظ السجل في قاعدة البيانات
+            logoHintRepository.insertOrUpdateHint(updatedEntity)
         }
     }
 

@@ -1,5 +1,6 @@
 package com.example.football2.dao
 
+import androidx.lifecycle.LiveData
 import androidx.room.*
 import com.example.football2.entity.LogoHintEntity
 
@@ -8,6 +9,9 @@ interface LogoHintDao {
 
     @Query("SELECT * FROM logo_hints WHERE lo_hi_logo = :logoId LIMIT 1")
     suspend fun getHintState(logoId: Int): LogoHintEntity?
+
+    @Query("UPDATE logo_hints SET lo_hi_player = :status WHERE lo_hi_logo = :logoId")
+    suspend fun updatePlayerHint(logoId: Int, status: Int = 1)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLogoHint(logoHint: LogoHintEntity)
@@ -24,6 +28,9 @@ interface LogoHintDao {
     // 🟢 التصحيح: البحث حسب lo_hi_logo وليس _lo_hi_id
     @Query("SELECT * FROM logo_hints WHERE lo_hi_logo = :logoId LIMIT 1")
     suspend fun getHintStateForLogo(logoId: Int): LogoHintEntity?
+
+    @Query("SELECT * FROM logo_hints WHERE lo_hi_logo = :logoId")
+    fun getLogoHintStateLiveData(logoId: Int): LiveData<LogoHintEntity?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrReplaceLogoHint(logoHint: LogoHintEntity)

@@ -86,7 +86,7 @@ class QuizActivity : AppCompatActivity() {
         logoHintViewModel.loadHintStateForLogo(currentLogoId)
     }
 
-    private fun observeGameStates() {
+    private fun observe2GameStates() {
         lifecycleScope.launch {
             hintViewModel.currentHints.collect { hintsCount ->
                 updateHeaderHintCounter(hintsCount)
@@ -134,9 +134,73 @@ class QuizActivity : AppCompatActivity() {
                     applyRevealedLettersIfUnlocked()
                 }
             }
+
         }
     }
 
+    private fun observeGameStates() {
+        // 1. مراقبة عداد النقاط/التلميحات العلوي
+        lifecycleScope.launch {
+            hintViewModel.currentHints.collect { hintsCount ->
+                updateHeaderHintCounter(hintsCount)
+            }
+        }
+
+        // 2. مراقبة بيانات الشعار الحالي (الاسم، الصورة، حالة الأكتمال)
+        lifecycleScope.launch {
+            logoViewModel.logos.collect { logosList ->
+                currentLogo = logosList.find { it._loid == currentLogoId }
+                currentLogo?.let { logo ->
+                    val resId = resources.getIdentifier(logo.lo_image, "drawable", packageName)
+                    if (resId != 0) binding.logo.setImageResource(resId)
+
+                    if (logo.lo_completed == "1") {
+                        showCompletedLayout(logo)
+                    } else {
+                        binding.completedLayout.visibility = View.GONE
+
+                        // تشغيل أنيميشن الصافرة والصوت أول مرة للمرحلة
+                        if (!isWhistlePlayedForCurrentLogo) {
+                            playWhistleAnimationAndStartGame(logo)
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. مراقبة حالة التلميحات المفتوحة للشعار (Hide, Letter, Player)
+        lifecycleScope.launch {
+            logoHintViewModel.currentLogoHintState.collect { hintEntity ->
+                if (hintEntity != null) {
+                    // أ. حالة تلميح إخفاء الحروف الخاطئة (Hide)
+                    if (hintEntity.hide == 1) {
+                        updateHideButtonState(true)
+                        applyHideHintIfUnlocked()
+                    } else {
+                        updateHideButtonState(false)
+                    }
+
+                    // ب. حالة تلميح إظهار حرف (Letter)
+                    val letterMask = hintEntity.letter ?: 0
+                    if (letterMask > 0) {
+                        updateLetterButtonState(true)
+                    } else {
+                        updateLetterButtonState(false)
+                    }
+
+                    // ج. حالة تلميح معلومات اللاعب (Player)
+                    if (hintEntity.player == 1) {
+                        updatePlayerButtonState(true)
+                    } else {
+                        updatePlayerButtonState(false)
+                    }
+
+                    // تطبيق كشف الحروف إن وجدت
+                    applyRevealedLettersIfUnlocked()
+                }
+            }
+        }
+    }
     // 🟢 دالة تشغيل أنيميشن الصفارة والصوت عند بداية السؤال
     private fun playWhistleAnimationAndStartGame(logo: LogoEntity) {
         isWhistlePlayedForCurrentLogo = true
@@ -244,10 +308,45 @@ class QuizActivity : AppCompatActivity() {
         binding.okInfo.setOnClickListener { binding.infoPopup.visibility = View.GONE }
 
         binding.player.setOnClickListener {
-            handleHintUsage {
-                binding.playerName.text = "معلومات إضافية متوفرة"
+            val currentHintState = logoHintViewModel.currentLogoHintState.value
+            val isPlayerUnlocked = currentHintState?.player == 1
+            val playerNameText = currentLogo?.lo_player ?: "لا يتوفر لاعب لهذا النادي"
+
+            val showPlayerPopup = {
+                binding.playerName.text = playerNameText
                 binding.playerPopup.visibility = View.VISIBLE
             }
+
+            if (isPlayerUnlocked) {
+                // التلميح مفتوح سابقاً -> إظهار النافذة مباشرة بدون خصم
+                showPlayerPopup()
+            } else {
+                // التلميح غير مفتوح -> إظهار نافذة التأكيد والخصم
+                val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+                builder.setTitle("Hints")
+                builder.setMessage("Show one more player!\nCost : 1 hint")
+
+                builder.setPositiveButton("OK") { dialog, _ ->
+                    handleHintUsage {
+                        logoHintViewModel.unlockPlayerHint(currentLogoId)
+                        showPlayerPopup()
+                    }
+                    dialog.dismiss()
+                }
+
+                builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
+
+                val dialog = builder.create()
+                dialog.show()
+                dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE)
+                    .setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+                dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE)
+                    .setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+            }
+        }
+
+        binding.okPlayer.setOnClickListener {
+            binding.playerPopup.visibility = View.GONE
         }
 
         binding.okPlayer.setOnClickListener { binding.playerPopup.visibility = View.GONE }
@@ -276,33 +375,6 @@ class QuizActivity : AppCompatActivity() {
             dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
         }
 
-//        binding.hide.setOnClickListener {
-//            val builder = androidx.appcompat.app.AlertDialog.Builder(this)
-//            builder.setTitle("Hints")
-//            builder.setMessage("Remove the wrong letters!\nCost : 1 hint")
-//
-//            builder.setPositiveButton("OK") { dialog, _ ->
-//                handleHintUsage {
-//                    val correctAnswer = currentLogo?.lo_name
-//                    if (!correctAnswer.isNullOrEmpty()) {
-//                        if (::lettersAdapter.isInitialized) {
-//                            lettersAdapter.removeWrongLetters(correctAnswer)
-//                        }
-//                        updateHideButtonState(true)
-//                        logoHintViewModel.unlockHideHint(currentLogoId)
-//                    }
-//                }
-//                dialog.dismiss()
-//            }
-////
-//            builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
-//
-//            val dialog = builder.create()
-//            dialog.show()
-//            dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
-//            dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
-//        }
-
         binding.hide.setOnClickListener {
             val builder = androidx.appcompat.app.AlertDialog.Builder(this)
             builder.setTitle("Hints")
@@ -315,34 +387,71 @@ class QuizActivity : AppCompatActivity() {
                         if (::lettersAdapter.isInitialized) {
                             lettersAdapter.removeWrongLetters(correctAnswer)
                         }
-
-                        // 1. 🔊 تشغيل صوت الانفجار R.raw.explosion
-                        try {
-                            val mediaPlayer = android.media.MediaPlayer.create(this, R.raw.explosion)
-                            mediaPlayer?.start()
-                            mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-
-                        // 2. ✨ تشغيل أنيميشن R.anim.blink على زر الإخفاء
-                        val animBlink = AnimationUtils.loadAnimation(applicationContext, R.anim.blink)
-                        binding.hide.startAnimation(animBlink)
-
-                        // 3. تحديث حالة الزر وتطبيق الحفظ
                         updateHideButtonState(true)
                         logoHintViewModel.unlockHideHint(currentLogoId)
                     }
                 }
                 dialog.dismiss()
             }
-
+//
             builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
 
             val dialog = builder.create()
             dialog.show()
             dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
             dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+        }
+
+//        binding.hide.setOnClickListener {
+//            val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+//            builder.setTitle("Hints")
+//            builder.setMessage("Remove the wrong letters!\nCost : 1 hint")
+//
+//            builder.setPositiveButton("OK") { dialog, _ ->
+//                handleHintUsage {
+//                    val correctAnswer = currentLogo?.lo_name
+//                    if (!correctAnswer.isNullOrEmpty()) {
+//                        if (::lettersAdapter.isInitialized) {
+//                            lettersAdapter.removeWrongLetters(correctAnswer)
+//                        }
+//
+//                        // 1. 🔊 تشغيل صوت الانفجار R.raw.explosion
+//                        try {
+//                            val mediaPlayer = android.media.MediaPlayer.create(this, R.raw.explosion)
+//                            mediaPlayer?.start()
+//                            mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+//                        } catch (e: Exception) {
+//                            e.printStackTrace()
+//                        }
+//
+//                        // 2. ✨ تشغيل أنيميشن R.anim.blink على زر الإخفاء
+//                        val animBlink = AnimationUtils.loadAnimation(applicationContext, R.anim.blink)
+//                        binding.hide.startAnimation(animBlink)
+//
+//                        // 3. تحديث حالة الزر وتطبيق الحفظ
+//                        updateHideButtonState(true)
+//                        logoHintViewModel.unlockHideHint(currentLogoId)
+//                    }
+//                }
+//                dialog.dismiss()
+//            }
+//
+//            builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
+//
+//            val dialog = builder.create()
+//            dialog.show()
+//            dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//            dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE).setTextColor(android.graphics.Color.parseColor("#9C27B0"))
+//        }
+    }
+
+    private fun updatePlayerButtonState(isUsed: Boolean) {
+        if (isUsed) {
+            binding.player.isSelected = true
+            binding.player.alpha = 0.5f
+        } else {
+            binding.player.isSelected = false
+            binding.player.alpha = 1.0f
         }
     }
 
