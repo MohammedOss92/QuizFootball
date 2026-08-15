@@ -354,6 +354,10 @@ class QuizActivity : AppCompatActivity() {
                         if (::lettersAdapter.isInitialized) {
 
                             // 🌟 تشغيل أنيميشن التلاشي على الأحرف الخاطئة فقط
+                            // حذف الحروف الخاطئة من Slots
+                            removeWrongLettersFromSlots(correctAnswer)
+
+// إخفاء الحروف الخاطئة من Grid مع Animation
                             lettersAdapter.removeWrongLettersWithAnimation(
                                 correctAnswer,
                                 binding.ballsGrid
@@ -389,6 +393,58 @@ class QuizActivity : AppCompatActivity() {
 
     }
 
+    private fun removeWrongLettersFromSlots(correctAnswer: String) {
+
+        for (i in answerSlots.indices) {
+
+            val slot = answerSlots[i] ?: continue
+
+            // الحرف الذي كشفه Letter Hint لا نحذفه
+            if (slot.currentTextColor == Color.YELLOW) {
+                continue
+            }
+
+            val enteredText = slot.text.toString().trim()
+
+            // Slot فارغ
+            if (enteredText.isEmpty() || enteredText == "?") {
+                continue
+            }
+
+            val enteredChar = enteredText.first().uppercaseChar()
+
+            // لأن correctAnswer يحتوي على spaces
+            // نحتاج مقارنة الحرف مع مكانه الحقيقي
+            val correctChar = correctAnswer
+                .replace(" ", "")
+                .getOrNull(
+                    answerSlots
+                        .subList(0, i + 1)
+                        .count { it != null } - 1
+                )
+                ?.uppercaseChar()
+
+            if (correctChar != null && enteredChar != correctChar) {
+
+                // احصل على مكان الحرف في Grid
+                val gridPosition = slotSourcePositions[i]
+
+                // مهم:
+                // لا نعيد الحرف إلى Grid
+                if (gridPosition != null) {
+                    slotSourcePositions.remove(i)
+                }
+
+                // إخفاء الحرف من Slot
+                slot.text = ""
+
+                // إعادة شكل الـ Slot فارغ
+                slot.setBackgroundResource(
+                    R.drawable.hint_background
+                )
+            }
+        }
+    }
     private fun revealOneCorrectLetter(correctAnswer: String) {
         // 1. تجميع كل أسطر الخانات في قائمة واحدة بالترتيب
         val spacesGrids = listOf(

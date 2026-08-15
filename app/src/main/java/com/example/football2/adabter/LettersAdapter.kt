@@ -128,7 +128,7 @@ class LettersAdapter(
         }
     }
 
-    fun removeWrongLetters(correctAnswer: String) {
+    fun removeWron2gLetters(correctAnswer: String) {
         val cleanAnswer = correctAnswer.replace(" ", "").uppercase()
         val requiredCountMap = cleanAnswer.groupingBy { it }.eachCount().toMutableMap()
 
@@ -144,6 +144,46 @@ class LettersAdapter(
         notifyDataSetChanged()
     }
 
+    fun removeWrongLetters(correctAnswer: String) {
+
+        val requiredLetters = mutableMapOf<Char, Int>()
+
+        for (char in correctAnswer.uppercase()) {
+            if (char != ' ') {
+                requiredLetters[char] =
+                    requiredLetters.getOrDefault(char, 0) + 1
+            }
+        }
+
+        val wrongPositions = mutableListOf<Int>()
+
+        for (i in letters.indices) {
+
+            val letter = letters[i].uppercaseChar()
+
+            val needed =
+                requiredLetters.getOrDefault(letter, 0)
+
+            if (needed > 0) {
+
+                requiredLetters[letter] = needed - 1
+
+            } else {
+
+                wrongPositions.add(i)
+            }
+        }
+
+        // نخزن الحروف الخاطئة
+        hiddenPositions.addAll(wrongPositions)
+
+        // نعيد الرسم
+        notifyDataSetChanged()
+
+        // بعد أن GridView يعرض العناصر الجديدة
+        // نشغل Animation على الخلايا الخاطئة
+    }
+
     // إظهار حرف معين مجدداً في الشبكة
     fun showLetterByChar(targetChar: Char) {
         val index = letters.indices.firstOrNull { letters[it] == targetChar && hiddenPositions.contains(it) }
@@ -155,5 +195,4 @@ class LettersAdapter(
     fun applyHideHintWithoutAnimation(correctAnswer: String) {
         removeWrongLetters(correctAnswer)
     }
-
 }
