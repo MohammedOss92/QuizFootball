@@ -151,7 +151,7 @@ class LettersAdapter(
             showLetter(it)
         }
     }
-
+//
     fun applyHideHintWithoutAnimation(correctAnswer: String) {
         removeWrongLetters(correctAnswer)
     }
