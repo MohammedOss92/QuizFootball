@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Football2">
         <activity
-            android:name="com.example.football2.MainActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Football2"
             android:windowSoftInputMode="adjustResize">
@@ -23,11 +23,11 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.example.football2.LogosActivity"
+            android:name=".LogosActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name="com.example.football2.QuizActivity"
+            android:name=".QuizActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
@@ -36,7 +36,11 @@
             android:value="ca-app-pub-3940256099942544~3347511713" />
 
         <activity
-            android:name="com.example.football2.QuizActivity2"
+            android:name=".QuizActivity2"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".QuizActivity3"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
     </application>
