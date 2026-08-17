@@ -195,4 +195,12 @@ class LettersAdapter(
     fun applyHideHintWithoutAnimation(correctAnswer: String) {
         removeWrongLetters(correctAnswer)
     }
+
+    fun getLetterAt(position: Int): Char {
+        return letters[position]
+    }
+
+    fun getItemCountSize(): Int {
+        return letters.size
+    }
 }

@@ -201,8 +201,75 @@ class QuizActivity : AppCompatActivity() {
             }
         }
     }
-
     private fun applyRevealedLettersIfUnlocked() {
+
+        val hintState =
+            logoHintViewModel.currentLogoHintState.value
+                ?: return
+
+        val letterMask =
+            hintState.letter ?: 0
+
+        val correctAnswer =
+            currentLogo?.lo_name ?: return
+
+        if (letterMask <= 0 || answerSlots.isEmpty()) {
+            return
+        }
+
+        for (i in correctAnswer.indices) {
+
+            // لا نتعامل مع Space
+            if (correctAnswer[i] == ' ') {
+                continue
+            }
+
+            // هل هذا الـ slot محفوظ كـ Letter Hint؟
+            if ((letterMask and (1 shl i)) != 0) {
+
+                val tvSlot =
+                    answerSlots.getOrNull(i)
+                        ?: continue
+
+                // لا نعيد الكتابة فوق حرف المستخدم
+                if (tvSlot.text.toString().isNotEmpty() &&
+                    tvSlot.text.toString() != "?"
+                ) {
+                    continue
+                }
+
+                val correctChar =
+                    correctAnswer[i].uppercaseChar()
+
+                // إزالة ?
+                tvSlot.text = ""
+
+                // وضع الحرف
+                tvSlot.text =
+                    correctChar.toString()
+
+                // لون Hint
+                tvSlot.setTextColor(Color.YELLOW)
+
+                // إخفاء الحرف من Grid
+                if (::lettersAdapter.isInitialized) {
+                    val gridPosition =
+                        findAvailablePositionOfLetter(correctChar)
+
+                    if (gridPosition != null) {
+
+                        slotSourcePositions[i] =
+                            gridPosition
+
+                        lettersAdapter.hideLetter(
+                            gridPosition
+                        )
+                    }
+                }
+            }
+        }
+    }
+    private fun applyReve2aledLettersIfUnlocked() {
         val hintState = logoHintViewModel.currentLogoHintState.value ?: return
         val letterMask = hintState.letter ?: 0
         val correctAnswer = currentLogo?.lo_name ?: return
@@ -514,6 +581,98 @@ class QuizActivity : AppCompatActivity() {
     }
 
     private fun revealLetterAtSlot(slotIndex: Int) {
+
+        // نتأكد أننا في وضع Letter Hint
+        if (!isSelectingSlotForLetterHint) {
+            return
+        }
+
+        val correctAnswer = currentLogo?.lo_name ?: return
+
+        val selectedSlot = answerSlots.getOrNull(slotIndex) ?: return
+
+        // يجب أن تكون الخانة ?
+        if (selectedSlot.text.toString().trim() != "?") {
+            return
+        }
+
+        // إذا كان المكان Space
+        if (correctAnswer.getOrNull(slotIndex) == ' ') {
+            return
+        }
+
+        // الحرف الصحيح لهذا الـ slot
+        val correctChar = correctAnswer[slotIndex].uppercaseChar()
+
+        // إزالة ?
+        selectedSlot.text = ""
+
+        // وضع الحرف الصحيح
+        selectedSlot.text = correctChar.toString()
+
+        // لون حرف الـ Hint
+        selectedSlot.setTextColor(Color.YELLOW)
+
+        // البحث عن نسخة الحرف الموجودة في Grid
+        val gridPosition = findAvailablePositionOfLetter(correctChar)
+
+        if (gridPosition != null) {
+
+            // ربط الـ slot بمكان الحرف في Grid
+            slotSourcePositions[slotIndex] = gridPosition
+
+            // إخفاء حرف Grid
+            lettersAdapter.hideLetter(gridPosition)
+        }
+
+        // إيقاف اختيار الـ Hint
+        isSelectingSlotForLetterHint = false
+
+        // حفظ هذا الـ slot فقط
+        logoHintViewModel.unlockLetterHintAt(
+            currentLogoId,
+            slotIndex
+        )
+
+        // زر Letter يصبح مستخدم
+        updateLetterButtonState(true)
+
+        // لا تستخدم:
+        // clearQuestionMarks()
+        //
+        // ولا تستخدم:
+        // unlockLetterHint(currentLogoId)
+
+        // فحص الإجابة فقط إذا امتلأت جميع الخانات
+        //checkAnswerComplete()
+    }
+
+    private fun findAvailablePositionOfLetter(targetChar: Char): Int? {
+
+        if (!::lettersAdapter.isInitialized) {
+            return null
+        }
+
+        // أماكن الحروف المستخدمة حاليًا داخل الـ slots
+        val usedPositions = slotSourcePositions.values.toSet()
+
+        // البحث عن أول حرف مطابق وغير مستخدم
+        for (i in 0 until lettersAdapter.getItemCountSize()) {
+
+            val letter = lettersAdapter.getLetterAt(i)
+
+            if (
+                letter.uppercaseChar() == targetChar.uppercaseChar() &&
+                !usedPositions.contains(i)
+            ) {
+                return i
+            }
+        }
+
+        return null
+    }
+
+    private fun revealLett2erAtSlot(slotIndex: Int) {
         val correctAnswer = currentLogo?.lo_name ?: return
         val tvSlot = answerSlots.getOrNull(slotIndex) ?: return
 
