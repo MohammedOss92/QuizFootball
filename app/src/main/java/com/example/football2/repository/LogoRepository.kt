@@ -34,4 +34,14 @@ class LogoRepository(private val logoDao: LogoDao) {
     suspend fun insertLogo(logo: LogoEntity) {
         logoDao.insertLogo(logo)
     }
+
+    // 🟢 جلب الشعار/السؤال بالكامل من قاعدة البيانات
+    suspend fun getLogoById(logoId: Int): LogoEntity? {
+        return logoDao.getLogoById(logoId)
+    }
+
+    // 🟢 جلب نص السؤال (lo_info) فقط
+    suspend fun getQuestionText(logoId: Int): String? {
+        return logoDao.getLogoInfoById(logoId)
+    }
 }

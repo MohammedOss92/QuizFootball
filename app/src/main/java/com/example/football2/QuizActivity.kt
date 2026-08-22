@@ -95,6 +95,9 @@ class QuizActivity : AppCompatActivity() {
     }
 
     private fun observeGameStates() {
+
+
+
         lifecycleScope.launch {
             hintViewModel.currentHints.collect { hintsCount ->
                 updateHeaderHintCounter(hintsCount)
@@ -819,3 +822,69 @@ class QuizActivity : AppCompatActivity() {
 //findAvailablePositionOfLetter
 //revealLetterAtSlot و revealLetterAtSlot2
 //generateShuffledLetters
+//private fun observeGameStates() {
+//
+//    lifecycleScope.launch {
+//        repeatOnLifecycle(Lifecycle.State.STARTED) {
+//            hintViewModel.currentHints.collect { hintsCount ->
+//                updateHeaderHintCounter(hintsCount)
+//            }
+//        }
+//    }
+//
+//    lifecycleScope.launch {
+//        repeatOnLifecycle(Lifecycle.State.STARTED) {
+//            logoViewModel.logos.collect { logosList ->
+//                currentLogo = logosList.find { it._loid == currentLogoId }
+//                currentLogo?.let { logo ->
+//                    val resId = resources.getIdentifier(logo.lo_image, "drawable", packageName)
+//                    if (resId != 0) binding.logo.setImageResource(resId)
+//
+//                    // 🟢 عرض السؤال دائماً
+//                    binding.questionText.text = logo.lo_info.takeIf { !it.isNullOrBlank() } ?: "من هو هذا اللاعب/الفريق؟"
+//
+//                    if (logo.lo_completed == "1") {
+//                        showCompletedLayout(logo)
+//                    } else {
+//                        // 🟢 تم إزالة binding.completedLayout.visibility = View.GONE لتبقى العناصر ظاهرة دائماً
+//                        if (!isWhistlePlayedForCurrentLogo) {
+//                            playWhistleAnimationAndStartGame(logo)
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    lifecycleScope.launch {
+//        repeatOnLifecycle(Lifecycle.State.STARTED) {
+//            logoHintViewModel.currentLogoHintState.collect { hintEntity ->
+//                if (hintEntity != null) {
+//                    if (hintEntity.hide == 1) {
+//                        updateHideButtonState(true)
+//                        applyHideHintIfUnlocked()
+//                    } else {
+//                        updateHideButtonState(false)
+//                    }
+//
+//                    val letterMask = hintEntity.letter ?: 0
+//                    if (letterMask > 0) {
+//                        updateLetterButtonState(true)
+//                    } else {
+//                        updateLetterButtonState(false)
+//                    }
+//
+//                    updateLetter2ButtonState()
+//
+//                    if (hintEntity.player == 1) {
+//                        updatePlayerButtonState(true)
+//                    } else {
+//                        updatePlayerButtonState(false)
+//                    }
+//
+//                    applyRevealedLettersIfUnlocked()
+//                }
+//            }
+//        }
+//    }
+//}

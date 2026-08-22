@@ -28,6 +28,18 @@ class LogoViewModel(private val logoRepository: LogoRepository) : ViewModel() {
     private val _bronzeMedals = MutableStateFlow(0)
     val bronzeMedals: StateFlow<Int> = _bronzeMedals.asStateFlow()
 
+
+    private val _questionText = MutableStateFlow<String>("")
+    val questionText: StateFlow<String> = _questionText.asStateFlow()
+
+    // تحميل نص السؤال مباشرة باستخدام الـ Repository
+    fun loadQuestionForLogo(logoId: Int) {
+        viewModelScope.launch {
+            val infoText = logoRepository.getQuestionText(logoId)
+            _questionText.value = infoText.takeIf { !it.isNullOrBlank() } ?: "ما هو اسم هذا النادي؟"
+        }
+    }
+
     // جلب شعارات مستوى معين
     fun loadLogosForLevel(levelId: Int) {
         viewModelScope.launch {

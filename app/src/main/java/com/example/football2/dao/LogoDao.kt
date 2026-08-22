@@ -59,4 +59,12 @@ interface LogoDao {
 
     @Query("UPDATE logo_hints SET lo_hi_hide = 1 WHERE lo_hi_logo = :logoId")
     suspend fun updateHideHint(logoId: Int)
+
+
+    @Query("SELECT * FROM logos WHERE _loid = :logoId LIMIT 1")
+    suspend fun getLogoById(logoId: Int): LogoEntity?
+
+    // 🟢 استعلام اختياري لجلب lo_info فقط مباشرة
+    @Query("SELECT lo_info FROM logos WHERE _loid = :logoId LIMIT 1")
+    suspend fun getLogoInfoById(logoId: Int): String?
 }
