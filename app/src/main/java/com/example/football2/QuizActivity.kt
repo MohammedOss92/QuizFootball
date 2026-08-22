@@ -48,7 +48,10 @@ class QuizActivity : AppCompatActivity() {
     private val answerSlots = ArrayList<TextView?>()
     private val slotSourcePositions = HashMap<Int, Int>()
 
+    // 🟢 فصل متغيّري وضع الاختيار للتلميحين
     private var isSelectingSlotForLetterHint = false
+    private var isSelectingSlotForLetter2Hint = false
+
     private var isWhistlePlayedForCurrentLogo = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -92,14 +95,12 @@ class QuizActivity : AppCompatActivity() {
     }
 
     private fun observeGameStates() {
-        // 1. مراقبة عداد التلميحات العلوي
         lifecycleScope.launch {
             hintViewModel.currentHints.collect { hintsCount ->
                 updateHeaderHintCounter(hintsCount)
             }
         }
 
-        // 2. مراقبة بيانات الشعار الحالي
         lifecycleScope.launch {
             logoViewModel.logos.collect { logosList ->
                 currentLogo = logosList.find { it._loid == currentLogoId }
@@ -120,11 +121,9 @@ class QuizActivity : AppCompatActivity() {
             }
         }
 
-        // 3. مراقبة حالة التلميحات
         lifecycleScope.launch {
             logoHintViewModel.currentLogoHintState.collect { hintEntity ->
                 if (hintEntity != null) {
-                    // تلميح إخفاء الحروف
                     if (hintEntity.hide == 1) {
                         updateHideButtonState(true)
                         applyHideHintIfUnlocked()
@@ -132,7 +131,6 @@ class QuizActivity : AppCompatActivity() {
                         updateHideButtonState(false)
                     }
 
-                    // تلميح إظهار حرف
                     val letterMask = hintEntity.letter ?: 0
                     if (letterMask > 0) {
                         updateLetterButtonState(true)
@@ -140,7 +138,8 @@ class QuizActivity : AppCompatActivity() {
                         updateLetterButtonState(false)
                     }
 
-                    // تلميح معلومات اللاعب
+                    updateLetter2ButtonState()
+
                     if (hintEntity.player == 1) {
                         updatePlayerButtonState(true)
                     } else {
@@ -201,91 +200,34 @@ class QuizActivity : AppCompatActivity() {
             }
         }
     }
+
     private fun applyRevealedLettersIfUnlocked() {
-
-        val hintState =
-            logoHintViewModel.currentLogoHintState.value
-                ?: return
-
-        val letterMask =
-            hintState.letter ?: 0
-
-        val correctAnswer =
-            currentLogo?.lo_name ?: return
-
-        if (letterMask <= 0 || answerSlots.isEmpty()) {
-            return
-        }
-
-        for (i in correctAnswer.indices) {
-
-            // لا نتعامل مع Space
-            if (correctAnswer[i] == ' ') {
-                continue
-            }
-
-            // هل هذا الـ slot محفوظ كـ Letter Hint؟
-            if ((letterMask and (1 shl i)) != 0) {
-
-                val tvSlot =
-                    answerSlots.getOrNull(i)
-                        ?: continue
-
-                // لا نعيد الكتابة فوق حرف المستخدم
-                if (tvSlot.text.toString().isNotEmpty() &&
-                    tvSlot.text.toString() != "?"
-                ) {
-                    continue
-                }
-
-                val correctChar =
-                    correctAnswer[i].uppercaseChar()
-
-                // إزالة ?
-                tvSlot.text = ""
-
-                // وضع الحرف
-                tvSlot.text =
-                    correctChar.toString()
-
-                // لون Hint
-                tvSlot.setTextColor(Color.YELLOW)
-
-                // إخفاء الحرف من Grid
-                if (::lettersAdapter.isInitialized) {
-                    val gridPosition =
-                        findAvailablePositionOfLetter(correctChar)
-
-                    if (gridPosition != null) {
-
-                        slotSourcePositions[i] =
-                            gridPosition
-
-                        lettersAdapter.hideLetter(
-                            gridPosition
-                        )
-                    }
-                }
-            }
-        }
-    }
-    private fun applyReve2aledLettersIfUnlocked() {
         val hintState = logoHintViewModel.currentLogoHintState.value ?: return
         val letterMask = hintState.letter ?: 0
         val correctAnswer = currentLogo?.lo_name ?: return
 
-        if (letterMask > 0 && answerSlots.isNotEmpty()) {
-            for (i in correctAnswer.indices) {
-                if ((letterMask and (1 shl i)) != 0) {
-                    val tvSlot = answerSlots.getOrNull(i)
-                    if (tvSlot != null && tvSlot.text.isEmpty()) {
-                        val correctChar = correctAnswer[i].uppercaseChar()
-                        tvSlot.text = correctChar.toString()
-                        tvSlot.setTextColor(Color.YELLOW)
+        if (letterMask <= 0 || answerSlots.isEmpty()) return
 
-                        if (::lettersAdapter.isInitialized) {
-                            lettersAdapter.hideLetterByChar(correctChar)
-                        }
+        for (i in correctAnswer.indices) {
+            if (correctAnswer[i] == ' ') continue
+
+            if ((letterMask and (1 shl i)) != 0) {
+                val tvSlot = answerSlots.getOrNull(i) ?: continue
+
+                if (tvSlot.text.toString().isNotEmpty() && tvSlot.text.toString() != "?") {
+                    continue
+                }
+
+                val correctChar = correctAnswer[i].uppercaseChar()
+
+                tvSlot.text = correctChar.toString()
+                tvSlot.setTextColor(Color.YELLOW)
+
+                if (::lettersAdapter.isInitialized) {
+                    val gridPosition = findAvailablePositionOfLetter(correctChar)
+                    if (gridPosition != null) {
+                        slotSourcePositions[i] = gridPosition
+                        lettersAdapter.hideLetter(gridPosition)
                     }
                 }
             }
@@ -336,10 +278,8 @@ class QuizActivity : AppCompatActivity() {
 
                 val dialog = builder.create()
                 dialog.show()
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                    .setTextColor(Color.parseColor("#9C27B0"))
-                dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-                    .setTextColor(Color.parseColor("#9C27B0"))
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#9C27B0"))
+                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#9C27B0"))
             }
         }
 
@@ -374,10 +314,8 @@ class QuizActivity : AppCompatActivity() {
 
                 val dialog = builder.create()
                 dialog.show()
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                    .setTextColor(Color.parseColor("#9C27B0"))
-                dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-                    .setTextColor(Color.parseColor("#9C27B0"))
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#9C27B0"))
+                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#9C27B0"))
             }
         }
 
@@ -386,6 +324,7 @@ class QuizActivity : AppCompatActivity() {
         binding.nextLogoButton.setOnClickListener { navigateToNextLogo() }
         binding.prevLogoButton.setOnClickListener { navigateToPrevLogo() }
 
+        // 🟢 الزر الأول: ينشط isSelectingSlotForLetterHint
         binding.letter.setOnClickListener {
             val builder = AlertDialog.Builder(this)
             builder.setTitle("Hints")
@@ -393,6 +332,7 @@ class QuizActivity : AppCompatActivity() {
 
             builder.setPositiveButton("OK") { dialog, _ ->
                 handleHintUsage {
+                    isSelectingSlotForLetter2Hint = false
                     isSelectingSlotForLetterHint = true
                     showQuestionMarksForHint()
                 }
@@ -407,7 +347,26 @@ class QuizActivity : AppCompatActivity() {
             dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#9C27B0"))
         }
 
+        // 🟢 الزر الثاني: ينشط isSelectingSlotForLetter2Hint
+        binding.letter2.setOnClickListener {
+            val builder = AlertDialog.Builder(this)
+            builder.setTitle("Hints")
+            builder.setMessage("Show one letter!\nCost : 1 hint")
 
+            builder.setPositiveButton("OK") { dialog, _ ->
+                handleHintUsage {
+                    isSelectingSlotForLetterHint = false
+                    isSelectingSlotForLetter2Hint = true
+                    showQuestionMarksForHint()
+                }
+                dialog.dismiss()
+            }
+            builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
+            val dialog = builder.create()
+            dialog.show()
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#9C27B0"))
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#9C27B0"))
+        }
 
         binding.hide.setOnClickListener {
             val builder = AlertDialog.Builder(this)
@@ -419,12 +378,7 @@ class QuizActivity : AppCompatActivity() {
                     val correctAnswer = currentLogo?.lo_name
                     if (!correctAnswer.isNullOrEmpty()) {
                         if (::lettersAdapter.isInitialized) {
-
-                            // 🌟 تشغيل أنيميشن التلاشي على الأحرف الخاطئة فقط
-                            // حذف الحروف الخاطئة من Slots
                             removeWrongLettersFromSlots(correctAnswer)
-
-// إخفاء الحروف الخاطئة من Grid مع Animation
                             lettersAdapter.removeWrongLettersWithAnimation(
                                 correctAnswer,
                                 binding.ballsGrid
@@ -438,7 +392,6 @@ class QuizActivity : AppCompatActivity() {
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
-
 
                         updateHideButtonState(true)
                         logoHintViewModel.unlockHideHint(currentLogoId)
@@ -454,34 +407,24 @@ class QuizActivity : AppCompatActivity() {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#9C27B0"))
             dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#9C27B0"))
         }
-//
-//
-//
-
     }
 
     private fun removeWrongLettersFromSlots(correctAnswer: String) {
-
         for (i in answerSlots.indices) {
-
             val slot = answerSlots[i] ?: continue
 
-            // الحرف الذي كشفه Letter Hint لا نحذفه
             if (slot.currentTextColor == Color.YELLOW) {
                 continue
             }
 
             val enteredText = slot.text.toString().trim()
 
-            // Slot فارغ
             if (enteredText.isEmpty() || enteredText == "?") {
                 continue
             }
 
             val enteredChar = enteredText.first().uppercaseChar()
 
-            // لأن correctAnswer يحتوي على spaces
-            // نحتاج مقارنة الحرف مع مكانه الحقيقي
             val correctChar = correctAnswer
                 .replace(" ", "")
                 .getOrNull(
@@ -492,71 +435,14 @@ class QuizActivity : AppCompatActivity() {
                 ?.uppercaseChar()
 
             if (correctChar != null && enteredChar != correctChar) {
-
-                // احصل على مكان الحرف في Grid
                 val gridPosition = slotSourcePositions[i]
 
-                // مهم:
-                // لا نعيد الحرف إلى Grid
                 if (gridPosition != null) {
                     slotSourcePositions.remove(i)
                 }
 
-                // إخفاء الحرف من Slot
                 slot.text = ""
-
-                // إعادة شكل الـ Slot فارغ
-                slot.setBackgroundResource(
-                    R.drawable.hint_background
-                )
-            }
-        }
-    }
-    private fun revealOneCorrectLetter(correctAnswer: String) {
-        // 1. تجميع كل أسطر الخانات في قائمة واحدة بالترتيب
-        val spacesGrids = listOf(
-            binding.spacesGrid1,
-            binding.spacesGrid2,
-            binding.spacesGrid3,
-            binding.spacesGrid4
-        )
-
-        // 2. تجميع كافة الـ TextViews الفرعية المضافة داخل الأسطر الأربعة
-        val allSlotViews = mutableListOf<TextView>()
-        for (grid in spacesGrids) {
-            for (i in 0 until grid.childCount) {
-                val child = grid.getChildAt(i)
-                if (child is TextView) {
-                    allSlotViews.add(child)
-                }
-            }
-        }
-
-        // 3. البحث عن أول حرف غير صحيح أو فارغ لكشفه
-        val cleanAnswer = correctAnswer.replace(" ", "")
-
-        for (i in cleanAnswer.indices) {
-            val correctChar = cleanAnswer[i]
-            val slotView = allSlotViews.getOrNull(i) ?: continue
-            val currentSlotText = slotView.text.toString()
-
-            // إذا كانت الخانة فارغة أو تحتوي على "?" أو حرف خاطئ
-            if (currentSlotText.isEmpty() || currentSlotText == "?" || currentSlotText[0] != correctChar) {
-
-                // إذا وضع المستخدم حرفاً خاطئاً سابقاً، نعيده إلى شبكة الكيبورد السفلى
-                if (currentSlotText.isNotEmpty() && currentSlotText != "?") {
-                    val wrongChar = currentSlotText[0]
-                    lettersAdapter.showLetterByChar(wrongChar)
-                }
-
-                // إخفاء الحرف الصحيح من شبكة الكيبورد السفلى (ballsGrid)
-                lettersAdapter.hideLetterByChar(correctChar)
-
-                // 🌟 وضع الحرف الصحيح في الخانة المقابلة مباشرة
-                slotView.text = correctChar.toString()
-
-                // التوقف عند كشف حرف واحد فقط
-                break
+                slot.setBackgroundResource(R.drawable.hint_background)
             }
         }
     }
@@ -580,124 +466,90 @@ class QuizActivity : AppCompatActivity() {
         }
     }
 
+    // 🟢 تنفيذ كشف حرف للزر الأول مع الحفظ في الـ ViewModel
     private fun revealLetterAtSlot(slotIndex: Int) {
-
-        // نتأكد أننا في وضع Letter Hint
-        if (!isSelectingSlotForLetterHint) {
-            return
-        }
+        if (!isSelectingSlotForLetterHint) return
 
         val correctAnswer = currentLogo?.lo_name ?: return
-
         val selectedSlot = answerSlots.getOrNull(slotIndex) ?: return
 
-        // يجب أن تكون الخانة ?
-        if (selectedSlot.text.toString().trim() != "?") {
-            return
-        }
+        if (selectedSlot.text.toString().trim() != "?") return
+        if (correctAnswer.getOrNull(slotIndex) == ' ') return
 
-        // إذا كان المكان Space
-        if (correctAnswer.getOrNull(slotIndex) == ' ') {
-            return
-        }
-
-        // الحرف الصحيح لهذا الـ slot
         val correctChar = correctAnswer[slotIndex].uppercaseChar()
 
-        // إزالة ?
-        selectedSlot.text = ""
+        clearQuestionMarks()
+        isSelectingSlotForLetterHint = false
 
-        // وضع الحرف الصحيح
         selectedSlot.text = correctChar.toString()
-
-        // لون حرف الـ Hint
         selectedSlot.setTextColor(Color.YELLOW)
 
-        // البحث عن نسخة الحرف الموجودة في Grid
         val gridPosition = findAvailablePositionOfLetter(correctChar)
-
         if (gridPosition != null) {
-
-            // ربط الـ slot بمكان الحرف في Grid
             slotSourcePositions[slotIndex] = gridPosition
-
-            // إخفاء حرف Grid
             lettersAdapter.hideLetter(gridPosition)
         }
 
-        // إيقاف اختيار الـ Hint
-        isSelectingSlotForLetterHint = false
-
-        // حفظ هذا الـ slot فقط
-        logoHintViewModel.unlockLetterHintAt(
-            currentLogoId,
-            slotIndex
-        )
-
-        // زر Letter يصبح مستخدم
+        logoHintViewModel.unlockLetterHintAt(currentLogoId, slotIndex)
         updateLetterButtonState(true)
+        checkAnswerComplete()
+    }
 
-        // لا تستخدم:
-        // clearQuestionMarks()
-        //
-        // ولا تستخدم:
-        // unlockLetterHint(currentLogoId)
+    // 🟢 تنفيذ كشف حرف مخصص للزر الثاني بدون حفظ الحرف كـ Letter Mask دائم
+    private fun revealLetterAtSlot2(slotIndex: Int) {
+        if (!isSelectingSlotForLetter2Hint) return
 
-        // فحص الإجابة فقط إذا امتلأت جميع الخانات
-        //checkAnswerComplete()
+        val correctAnswer = currentLogo?.lo_name ?: return
+        val selectedSlot = answerSlots.getOrNull(slotIndex) ?: return
+
+        if (selectedSlot.text.toString().trim() != "?") return
+        if (correctAnswer.getOrNull(slotIndex) == ' ') return
+
+        val correctChar = correctAnswer[slotIndex].uppercaseChar()
+
+        clearQuestionMarks()
+        isSelectingSlotForLetter2Hint = false
+
+        selectedSlot.text = correctChar.toString()
+        selectedSlot.setTextColor(Color.YELLOW)
+
+        val gridPosition = findAvailablePositionOfLetter(correctChar)
+        if (gridPosition != null) {
+            slotSourcePositions[slotIndex] = gridPosition
+            lettersAdapter.hideLetter(gridPosition)
+        }
+
+        updateLetter2ButtonState()
+        checkAnswerComplete()
     }
 
     private fun findAvailablePositionOfLetter(targetChar: Char): Int? {
+        if (!::lettersAdapter.isInitialized) return null
 
-        if (!::lettersAdapter.isInitialized) {
-            return null
-        }
-
-        // أماكن الحروف المستخدمة حاليًا داخل الـ slots
         val usedPositions = slotSourcePositions.values.toSet()
 
-        // البحث عن أول حرف مطابق وغير مستخدم
         for (i in 0 until lettersAdapter.getItemCountSize()) {
-
             val letter = lettersAdapter.getLetterAt(i)
-
-            if (
-                letter.uppercaseChar() == targetChar.uppercaseChar() &&
-                !usedPositions.contains(i)
-            ) {
+            if (letter.uppercaseChar() == targetChar.uppercaseChar() && !usedPositions.contains(i)) {
                 return i
             }
         }
-
         return null
     }
 
-    private fun revealLett2erAtSlot(slotIndex: Int) {
-        val correctAnswer = currentLogo?.lo_name ?: return
-        val tvSlot = answerSlots.getOrNull(slotIndex) ?: return
+    private fun updateLetterButtonState(isUsed: Boolean) {
+        binding.letter.isSelected = isUsed
+        binding.letter.alpha = if (isUsed) 0.5f else 1.0f
+    }
 
-        if (slotIndex < correctAnswer.length && correctAnswer[slotIndex] != ' ') {
-            val correctChar = correctAnswer[slotIndex].uppercaseChar()
+    private fun updateLetter2ButtonState() {
+        binding.letter2.isEnabled = true
+        binding.letter2.alpha = 1.0f
+    }
 
-            removeLetterFromAnswer(slotIndex)
-
-            tvSlot.text = correctChar.toString()
-            tvSlot.setTextColor(Color.YELLOW)
-
-            if (::lettersAdapter.isInitialized) {
-                lettersAdapter.hideLetterByChar(correctChar)
-            }
-
-            val currentMask = logoHintViewModel.currentLogoHintState.value?.letter ?: 0
-            val updatedMask = currentMask or (1 shl slotIndex)
-            logoHintViewModel.unlockLetterHint(currentLogoId)
-
-            clearQuestionMarks()
-            isSelectingSlotForLetterHint = false
-            updateLetterButtonState(true)
-
-            checkAnswerComplete()
-        }
+    private fun updateHideButtonState(isUsed: Boolean) {
+        binding.hide.isSelected = isUsed
+        binding.hide.alpha = if (isUsed) 0.5f else 1.0f
     }
 
     private fun updatePlayerButtonState(isUsed: Boolean) {
@@ -753,11 +605,13 @@ class QuizActivity : AppCompatActivity() {
                 tvSlot.setBackgroundResource(R.drawable.hint_background)
 
                 val slotIndex = i
+
+                // 🟢 تحديد أي الدالتين سيتم تنفيذها بناءً على الزر المضغوط
                 slotView.setOnClickListener {
-                    if (isSelectingSlotForLetterHint) {
-                        revealLetterAtSlot(slotIndex)
-                    } else {
-                        removeLetterFromAnswer(slotIndex)
+                    when {
+                        isSelectingSlotForLetterHint -> revealLetterAtSlot(slotIndex)
+                        isSelectingSlotForLetter2Hint -> revealLetterAtSlot2(slotIndex)
+                        else -> removeLetterFromAnswer(slotIndex)
                     }
                 }
 
@@ -773,15 +627,15 @@ class QuizActivity : AppCompatActivity() {
     }
 
     private fun addLetterToAnswer(gridPosition: Int, letter: Char) {
-        if (isSelectingSlotForLetterHint) {
+        if (isSelectingSlotForLetterHint || isSelectingSlotForLetter2Hint) {
             clearQuestionMarks()
             isSelectingSlotForLetterHint = false
+            isSelectingSlotForLetter2Hint = false
         }
 
         for (i in answerSlots.indices) {
             val tvSlot = answerSlots[i]
             if (tvSlot != null && tvSlot.text.isEmpty()) {
-
                 try {
                     val mediaPlayer = MediaPlayer.create(this, R.raw.kick)
                     mediaPlayer?.start()
@@ -916,8 +770,6 @@ class QuizActivity : AppCompatActivity() {
             if (currentIndex != -1 && currentIndex < logosList.size - 1) {
                 val nextLogo = logosList[currentIndex + 1]
                 updateActivityForNewLogo(nextLogo._loid ?: 0)
-            } else {
-                Toast.makeText(this, "لقد وصلت لآخر شعار في هذا المستوى!", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -930,34 +782,978 @@ class QuizActivity : AppCompatActivity() {
             if (currentIndex > 0) {
                 val prevLogo = logosList[currentIndex - 1]
                 updateActivityForNewLogo(prevLogo._loid ?: 0)
-            } else {
-                Toast.makeText(this, "هذا هو الشعار الأول في المستوى!", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    private fun updateHideButtonState(isUsed: Boolean) {
-        binding.hide.isSelected = isUsed
-        binding.hide.isEnabled = !isUsed
-        binding.hide.alpha = if (isUsed) 0.5f else 1.0f
-    }
-
-    private fun updateLetterButtonState(isUsed: Boolean) {
-        (!isUsed).also { binding.letter.isEnabled = it }
-        binding.letter.alpha = if (isUsed) 0.5f else 1.0f
-    }
-
     private fun updateActivityForNewLogo(newLogoId: Int) {
         currentLogoId = newLogoId
-        isSelectingSlotForLetterHint = false
         isWhistlePlayedForCurrentLogo = false
-
-        binding.whistle.visibility = View.GONE
-        binding.wrong.visibility = View.GONE
-        binding.infoPopup.visibility = View.GONE
-        binding.playerPopup.visibility = View.GONE
-
         logoHintViewModel.loadHintStateForLogo(currentLogoId)
         logoViewModel.loadLogosForLevel(currentLevelId)
     }
 }
+//
+//package com.example.football2
+//
+//import android.graphics.Color
+//import android.graphics.drawable.ColorDrawable
+//import android.media.MediaPlayer
+//import android.os.Bundle
+//import android.view.LayoutInflater
+//import android.view.View
+//import android.view.animation.Animation
+//import android.view.animation.AnimationUtils
+//import android.widget.Button
+//import android.widget.FrameLayout
+//import android.widget.ImageView
+//import android.widget.LinearLayout
+//import android.widget.TextView
+//import android.widget.Toast
+//import androidx.appcompat.app.AlertDialog
+//import androidx.appcompat.app.AppCompatActivity
+//import androidx.lifecycle.ViewModelProvider
+//import androidx.lifecycle.lifecycleScope
+//import com.example.football2.adabter.LettersAdapter
+//import com.example.football2.databinding.ActivityQuizBinding
+//import com.example.football2.db.AppDatabase
+//import com.example.football2.entity.LogoEntity
+//import com.example.football2.repository.GameControlRepository
+//import com.example.football2.repository.HintRepository
+//import com.example.football2.repository.LogoHintRepository
+//import com.example.football2.repository.LogoRepository
+//import com.example.football2.viewModels.HintViewModel
+//import com.example.football2.viewModels.LogoHintViewModel
+//import com.example.football2.viewModels.LogoViewModel
+//import com.example.football2.viewModels.ViewModelFactory
+//import kotlinx.coroutines.launch
+//
+//class QuizActivity : AppCompatActivity() {
+//
+//    private lateinit var binding: ActivityQuizBinding
+//
+//    private lateinit var logoViewModel: LogoViewModel
+//    private lateinit var hintViewModel: HintViewModel
+//    private lateinit var logoHintViewModel: LogoHintViewModel
+//
+//    private var currentLogoId: Int = 0
+//    private var currentLevelId: Int = 0
+//    private var currentLogo: LogoEntity? = null
+//
+//    private lateinit var lettersAdapter: LettersAdapter
+//    private val answerSlots = ArrayList<TextView?>()
+//    private val slotSourcePositions = HashMap<Int, Int>()
+//
+//    private var isSelectingSlotForLetterHint = false
+//    private var isWhistlePlayedForCurrentLogo = false
+//
+//    override fun onCreate(savedInstanceState: Bundle?) {
+//        super.onCreate(savedInstanceState)
+//        binding = ActivityQuizBinding.inflate(layoutInflater)
+//        setContentView(binding.root)
+//
+//        currentLogoId = intent.getIntExtra("LOGO_ID", 0)
+//        currentLevelId = intent.getIntExtra("LEVEL_ID", 0)
+//
+//        val database = AppDatabase.getDatabase(this)
+//        val logoRepo = LogoRepository(database.logoDao())
+//        val hintRepo = HintRepository(database.hintDao())
+//        val logoHintRepo = LogoHintRepository(database.logoHintDao())
+//        val gameControlRepo = GameControlRepository(
+//            database.gameControlDao(),
+//            database.logoDao(),
+//            database.levelDao(),
+//            database.hintDao(),
+//            database.logoHintDao()
+//        )
+//
+//        val factory = ViewModelFactory(
+//            logoRepository = logoRepo,
+//            hintRepository = hintRepo,
+//            logoHintRepository = logoHintRepo,
+//            gameControlRepository = gameControlRepo
+//        )
+//
+//        logoViewModel = ViewModelProvider(this, factory)[LogoViewModel::class.java]
+//        hintViewModel = ViewModelProvider(this, factory)[HintViewModel::class.java]
+//        logoHintViewModel = ViewModelProvider(this, factory)[LogoHintViewModel::class.java]
+//
+//        logoViewModel.loadLogosForLevel(currentLevelId)
+//        hintViewModel.loadCurrentHints()
+//
+//        observeGameStates()
+//        setupActions()
+//
+//        logoHintViewModel.loadHintStateForLogo(currentLogoId)
+//    }
+//
+//    private fun observeGameStates() {
+//        // 1. مراقبة عداد التلميحات العلوي
+//        lifecycleScope.launch {
+//            hintViewModel.currentHints.collect { hintsCount ->
+//                updateHeaderHintCounter(hintsCount)
+//            }
+//        }
+//
+//        // 2. مراقبة بيانات الشعار الحالي
+//        lifecycleScope.launch {
+//            logoViewModel.logos.collect { logosList ->
+//                currentLogo = logosList.find { it._loid == currentLogoId }
+//                currentLogo?.let { logo ->
+//                    val resId = resources.getIdentifier(logo.lo_image, "drawable", packageName)
+//                    if (resId != 0) binding.logo.setImageResource(resId)
+//
+//                    if (logo.lo_completed == "1") {
+//                        showCompletedLayout(logo)
+//                    } else {
+//                        binding.completedLayout.visibility = View.GONE
+//
+//                        if (!isWhistlePlayedForCurrentLogo) {
+//                            playWhistleAnimationAndStartGame(logo)
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        // 3. مراقبة حالة التلميحات
+//        lifecycleScope.launch {
+//            logoHintViewModel.currentLogoHintState.collect { hintEntity ->
+//                if (hintEntity != null) {
+//                    // تلميح إخفاء الحروف
+//                    if (hintEntity.hide == 1) {
+//                        updateHideButtonState(true)
+//                        applyHideHintIfUnlocked()
+//                    } else {
+//                        updateHideButtonState(false)
+//                    }
+//
+//                    // تلميح إظهار حرف
+//                    val letterMask = hintEntity.letter ?: 0
+//                    if (letterMask > 0) {
+//                        updateLetterButtonState(true)
+//                    } else {
+//                        updateLetterButtonState(false)
+//                    }
+//
+//                    // تلميح معلومات اللاعب
+//                    if (hintEntity.player == 1) {
+//                        updatePlayerButtonState(true)
+//                    } else {
+//                        updatePlayerButtonState(false)
+//                    }
+//
+//                    applyRevealedLettersIfUnlocked()
+//                }
+//            }
+//        }
+//    }
+//
+//    private fun playWhistleAnimationAndStartGame(logo: LogoEntity) {
+//        isWhistlePlayedForCurrentLogo = true
+//
+//        binding.leftHints.visibility = View.INVISIBLE
+//        binding.rightHints.visibility = View.INVISIBLE
+//        binding.ballsGrid.visibility = View.INVISIBLE
+//
+//        try {
+//            val mediaPlayer = MediaPlayer.create(this, R.raw.whistle)
+//            mediaPlayer?.start()
+//            mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//        }
+//
+//        binding.whistle.visibility = View.VISIBLE
+//        val animShakeWhistle = AnimationUtils.loadAnimation(applicationContext, R.anim.shake_whistle)
+//        binding.whistle.startAnimation(animShakeWhistle)
+//
+//        animShakeWhistle.setAnimationListener(object : Animation.AnimationListener {
+//            override fun onAnimationStart(animation: Animation?) {}
+//
+//            override fun onAnimationEnd(animation: Animation?) {
+//                binding.whistle.visibility = View.GONE
+//
+//                setupKeyboard(logo.lo_name ?: "")
+//
+//                applyHideHintIfUnlocked()
+//                applyRevealedLettersIfUnlocked()
+//
+//                binding.leftHints.visibility = View.VISIBLE
+//                binding.rightHints.visibility = View.VISIBLE
+//                binding.ballsGrid.visibility = View.VISIBLE
+//            }
+//
+//            override fun onAnimationRepeat(animation: Animation?) {}
+//        })
+//    }
+//
+//    private fun applyHideHintIfUnlocked() {
+//        val hintState = logoHintViewModel.currentLogoHintState.value
+//        if (hintState?.hide == 1 && ::lettersAdapter.isInitialized) {
+//            val correctAnswer = currentLogo?.lo_name
+//            if (!correctAnswer.isNullOrEmpty()) {
+//                lettersAdapter.applyHideHintWithoutAnimation(correctAnswer)
+//            }
+//        }
+//    }
+//    private fun applyRevealedLettersIfUnlocked() {
+//
+//        val hintState =
+//            logoHintViewModel.currentLogoHintState.value
+//                ?: return
+//
+//        val letterMask =
+//            hintState.letter ?: 0
+//
+//        val correctAnswer =
+//            currentLogo?.lo_name ?: return
+//
+//        if (letterMask <= 0 || answerSlots.isEmpty()) {
+//            return
+//        }
+//
+//        for (i in correctAnswer.indices) {
+//
+//            // لا نتعامل مع Space
+//            if (correctAnswer[i] == ' ') {
+//                continue
+//            }
+//
+//            // هل هذا الـ slot محفوظ كـ Letter Hint؟
+//            if ((letterMask and (1 shl i)) != 0) {
+//
+//                val tvSlot =
+//                    answerSlots.getOrNull(i)
+//                        ?: continue
+//
+//                // لا نعيد الكتابة فوق حرف المستخدم
+//                if (tvSlot.text.toString().isNotEmpty() &&
+//                    tvSlot.text.toString() != "?"
+//                ) {
+//                    continue
+//                }
+//
+//                val correctChar =
+//                    correctAnswer[i].uppercaseChar()
+//
+//                // إزالة ?
+//                tvSlot.text = ""
+//
+//                // وضع الحرف
+//                tvSlot.text =
+//                    correctChar.toString()
+//
+//                // لون Hint
+//                tvSlot.setTextColor(Color.YELLOW)
+//
+//                // إخفاء الحرف من Grid
+//                if (::lettersAdapter.isInitialized) {
+//                    val gridPosition =
+//                        findAvailablePositionOfLetter(correctChar)
+//
+//                    if (gridPosition != null) {
+//
+//                        slotSourcePositions[i] =
+//                            gridPosition
+//
+//                        lettersAdapter.hideLetter(
+//                            gridPosition
+//                        )
+//                    }
+//                }
+//            }
+//        }
+//    }
+//    private fun applyReve2aledLettersIfUnlocked() {
+//        val hintState = logoHintViewModel.currentLogoHintState.value ?: return
+//        val letterMask = hintState.letter ?: 0
+//        val correctAnswer = currentLogo?.lo_name ?: return
+//
+//        if (letterMask > 0 && answerSlots.isNotEmpty()) {
+//            for (i in correctAnswer.indices) {
+//                if ((letterMask and (1 shl i)) != 0) {
+//                    val tvSlot = answerSlots.getOrNull(i)
+//                    if (tvSlot != null && tvSlot.text.isEmpty()) {
+//                        val correctChar = correctAnswer[i].uppercaseChar()
+//                        tvSlot.text = correctChar.toString()
+//                        tvSlot.setTextColor(Color.YELLOW)
+//
+//                        if (::lettersAdapter.isInitialized) {
+//                            lettersAdapter.hideLetterByChar(correctChar)
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    private fun updateHeaderHintCounter(hintsCount: Int) {
+//        val tvCounterValue = findViewById<TextView>(R.id.tvCounterValue) ?: findViewById<TextView>(R.id.scoreValue)
+//        val tvCounterLabel = findViewById<TextView>(R.id.tvCounterLabel) ?: findViewById<TextView>(R.id.scoreTitle)
+//
+//        tvCounterValue?.text = hintsCount.toString()
+//        tvCounterValue?.setTextColor(Color.parseColor("#7CB342"))
+//        tvCounterLabel?.text = "HINTS"
+//        tvCounterLabel?.setTextColor(Color.parseColor("#7CB342"))
+//    }
+//
+//    private fun setupActions() {
+//        val btnBack = findViewById<View>(R.id.btnBack)
+//        btnBack?.setOnClickListener { finish() }
+//
+//        binding.facebook.setOnClickListener {
+//            handleHintUsage {
+//                logoHintViewModel.unlockFacebookHint(currentLogoId)
+//                Toast.makeText(this, "تم فتح تلميح فيسبوك", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//
+//        binding.info.setOnClickListener {
+//            val currentHintState = logoHintViewModel.currentLogoHintState.value
+//            val isInfoUnlocked = currentHintState?.info == 1
+//            val infoMessage = currentLogo?.lo_info ?: "لا توجد معلومات متاحة لهذا النادي"
+//
+//            if (isInfoUnlocked) {
+//                showBlackCustomDialog(infoMessage, R.drawable.wikipedia_pressed)
+//            } else {
+//                val builder = AlertDialog.Builder(this)
+//                builder.setTitle("Hints")
+//                builder.setMessage("Show a clue sentence of the answer!\nCost : 1 hint")
+//
+//                builder.setPositiveButton("OK") { dialog, _ ->
+//                    handleHintUsage {
+//                        logoHintViewModel.unlockInfoHint(currentLogoId)
+//                        showBlackCustomDialog(infoMessage, R.drawable.wikipedia_pressed)
+//                    }
+//                    dialog.dismiss()
+//                }
+//                builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
+//
+//                val dialog = builder.create()
+//                dialog.show()
+//                dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+//                    .setTextColor(Color.parseColor("#9C27B0"))
+//                dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+//                    .setTextColor(Color.parseColor("#9C27B0"))
+//            }
+//        }
+//
+//        binding.okInfo.setOnClickListener { binding.infoPopup.visibility = View.GONE }
+//
+//        binding.player.setOnClickListener {
+//            val currentHintState = logoHintViewModel.currentLogoHintState.value
+//            val isPlayerUnlocked = currentHintState?.player == 1
+//            val playerNameText = currentLogo?.lo_player ?: "لا يتوفر لاعب لهذا النادي"
+//
+//            val showPlayerPopup = {
+//                binding.playerName.text = playerNameText
+//                binding.playerPopup.visibility = View.VISIBLE
+//            }
+//
+//            if (isPlayerUnlocked) {
+//                showPlayerPopup()
+//            } else {
+//                val builder = AlertDialog.Builder(this)
+//                builder.setTitle("Hints")
+//                builder.setMessage("Show one more player!\nCost : 1 hint")
+//
+//                builder.setPositiveButton("OK") { dialog, _ ->
+//                    handleHintUsage {
+//                        logoHintViewModel.unlockPlayerHint(currentLogoId)
+//                        showPlayerPopup()
+//                    }
+//                    dialog.dismiss()
+//                }
+//
+//                builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
+//
+//                val dialog = builder.create()
+//                dialog.show()
+//                dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+//                    .setTextColor(Color.parseColor("#9C27B0"))
+//                dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+//                    .setTextColor(Color.parseColor("#9C27B0"))
+//            }
+//        }
+//
+//        binding.okPlayer.setOnClickListener { binding.playerPopup.visibility = View.GONE }
+//
+//        binding.nextLogoButton.setOnClickListener { navigateToNextLogo() }
+//        binding.prevLogoButton.setOnClickListener { navigateToPrevLogo() }
+//
+//        binding.letter.setOnClickListener {
+//            val builder = AlertDialog.Builder(this)
+//            builder.setTitle("Hints")
+//            builder.setMessage("Show one letter!\nCost : 1 hint")
+//
+//            builder.setPositiveButton("OK") { dialog, _ ->
+//                handleHintUsage {
+//                    isSelectingSlotForLetterHint = true
+//                    showQuestionMarksForHint()
+//                }
+//                dialog.dismiss()
+//            }
+//
+//            builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
+//
+//            val dialog = builder.create()
+//            dialog.show()
+//            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#9C27B0"))
+//            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#9C27B0"))
+//        }
+//
+//
+//
+//        binding.hide.setOnClickListener {
+//            val builder = AlertDialog.Builder(this)
+//            builder.setTitle("Hints")
+//            builder.setMessage("Remove the wrong letters!\nCost : 1 hint")
+//
+//            builder.setPositiveButton("OK") { dialog, _ ->
+//                handleHintUsage {
+//                    val correctAnswer = currentLogo?.lo_name
+//                    if (!correctAnswer.isNullOrEmpty()) {
+//                        if (::lettersAdapter.isInitialized) {
+//
+//                            // 🌟 تشغيل أنيميشن التلاشي على الأحرف الخاطئة فقط
+//                            // حذف الحروف الخاطئة من Slots
+//                            removeWrongLettersFromSlots(correctAnswer)
+//
+//// إخفاء الحروف الخاطئة من Grid مع Animation
+//                            lettersAdapter.removeWrongLettersWithAnimation(
+//                                correctAnswer,
+//                                binding.ballsGrid
+//                            )
+//                        }
+//
+//                        try {
+//                            val mediaPlayer = MediaPlayer.create(this, R.raw.explosion)
+//                            mediaPlayer?.start()
+//                            mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+//                        } catch (e: Exception) {
+//                            e.printStackTrace()
+//                        }
+//
+//
+//                        updateHideButtonState(true)
+//                        logoHintViewModel.unlockHideHint(currentLogoId)
+//                    }
+//                }
+//                dialog.dismiss()
+//            }
+//
+//            builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
+//
+//            val dialog = builder.create()
+//            dialog.show()
+//            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.parseColor("#9C27B0"))
+//            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.parseColor("#9C27B0"))
+//        }
+////
+////
+////
+//
+//    }
+//
+//    private fun removeWrongLettersFromSlots(correctAnswer: String) {
+//
+//        for (i in answerSlots.indices) {
+//
+//            val slot = answerSlots[i] ?: continue
+//
+//            // الحرف الذي كشفه Letter Hint لا نحذفه
+//            if (slot.currentTextColor == Color.YELLOW) {
+//                continue
+//            }
+//
+//            val enteredText = slot.text.toString().trim()
+//
+//            // Slot فارغ
+//            if (enteredText.isEmpty() || enteredText == "?") {
+//                continue
+//            }
+//
+//            val enteredChar = enteredText.first().uppercaseChar()
+//
+//            // لأن correctAnswer يحتوي على spaces
+//            // نحتاج مقارنة الحرف مع مكانه الحقيقي
+//            val correctChar = correctAnswer
+//                .replace(" ", "")
+//                .getOrNull(
+//                    answerSlots
+//                        .subList(0, i + 1)
+//                        .count { it != null } - 1
+//                )
+//                ?.uppercaseChar()
+//
+//            if (correctChar != null && enteredChar != correctChar) {
+//
+//                // احصل على مكان الحرف في Grid
+//                val gridPosition = slotSourcePositions[i]
+//
+//                // مهم:
+//                // لا نعيد الحرف إلى Grid
+//                if (gridPosition != null) {
+//                    slotSourcePositions.remove(i)
+//                }
+//
+//                // إخفاء الحرف من Slot
+//                slot.text = ""
+//
+//                // إعادة شكل الـ Slot فارغ
+//                slot.setBackgroundResource(
+//                    R.drawable.hint_background
+//                )
+//            }
+//        }
+//    }
+//    private fun revealOneCorrectLetter(correctAnswer: String) {
+//        // 1. تجميع كل أسطر الخانات في قائمة واحدة بالترتيب
+//        val spacesGrids = listOf(
+//            binding.spacesGrid1,
+//            binding.spacesGrid2,
+//            binding.spacesGrid3,
+//            binding.spacesGrid4
+//        )
+//
+//        // 2. تجميع كافة الـ TextViews الفرعية المضافة داخل الأسطر الأربعة
+//        val allSlotViews = mutableListOf<TextView>()
+//        for (grid in spacesGrids) {
+//            for (i in 0 until grid.childCount) {
+//                val child = grid.getChildAt(i)
+//                if (child is TextView) {
+//                    allSlotViews.add(child)
+//                }
+//            }
+//        }
+//
+//        // 3. البحث عن أول حرف غير صحيح أو فارغ لكشفه
+//        val cleanAnswer = correctAnswer.replace(" ", "")
+//
+//        for (i in cleanAnswer.indices) {
+//            val correctChar = cleanAnswer[i]
+//            val slotView = allSlotViews.getOrNull(i) ?: continue
+//            val currentSlotText = slotView.text.toString()
+//
+//            // إذا كانت الخانة فارغة أو تحتوي على "?" أو حرف خاطئ
+//            if (currentSlotText.isEmpty() || currentSlotText == "?" || currentSlotText[0] != correctChar) {
+//
+//                // إذا وضع المستخدم حرفاً خاطئاً سابقاً، نعيده إلى شبكة الكيبورد السفلى
+//                if (currentSlotText.isNotEmpty() && currentSlotText != "?") {
+//                    val wrongChar = currentSlotText[0]
+//                    lettersAdapter.showLetterByChar(wrongChar)
+//                }
+//
+//                // إخفاء الحرف الصحيح من شبكة الكيبورد السفلى (ballsGrid)
+//                lettersAdapter.hideLetterByChar(correctChar)
+//
+//                // 🌟 وضع الحرف الصحيح في الخانة المقابلة مباشرة
+//                slotView.text = correctChar.toString()
+//
+//                // التوقف عند كشف حرف واحد فقط
+//                break
+//            }
+//        }
+//    }
+//
+//    private fun showQuestionMarksForHint() {
+//        for (i in answerSlots.indices) {
+//            val tvSlot = answerSlots[i]
+//            if (tvSlot != null && tvSlot.text.isEmpty()) {
+//                tvSlot.text = "?"
+//                tvSlot.setTextColor(Color.GRAY)
+//            }
+//        }
+//    }
+//
+//    private fun clearQuestionMarks() {
+//        for (tvSlot in answerSlots) {
+//            if (tvSlot != null && tvSlot.text == "?") {
+//                tvSlot.text = ""
+//                tvSlot.setTextColor(Color.WHITE)
+//            }
+//        }
+//    }
+//
+//    private fun revealLetterAtSlot(slotIndex: Int) {
+//
+//        // نتأكد أننا في وضع Letter Hint
+//        if (!isSelectingSlotForLetterHint) {
+//            return
+//        }
+//
+//        val correctAnswer = currentLogo?.lo_name ?: return
+//
+//        val selectedSlot = answerSlots.getOrNull(slotIndex) ?: return
+//
+//        // يجب أن تكون الخانة ?
+//        if (selectedSlot.text.toString().trim() != "?") {
+//            return
+//        }
+//
+//        // إذا كان المكان Space
+//        if (correctAnswer.getOrNull(slotIndex) == ' ') {
+//            return
+//        }
+//
+//        // الحرف الصحيح لهذا الـ slot
+//        val correctChar = correctAnswer[slotIndex].uppercaseChar()
+//
+//        // إزالة ?
+//        selectedSlot.text = ""
+//
+//        // وضع الحرف الصحيح
+//        selectedSlot.text = correctChar.toString()
+//
+//        // لون حرف الـ Hint
+//        selectedSlot.setTextColor(Color.YELLOW)
+//
+//        // البحث عن نسخة الحرف الموجودة في Grid
+//        val gridPosition = findAvailablePositionOfLetter(correctChar)
+//
+//        if (gridPosition != null) {
+//
+//            // ربط الـ slot بمكان الحرف في Grid
+//            slotSourcePositions[slotIndex] = gridPosition
+//
+//            // إخفاء حرف Grid
+//            lettersAdapter.hideLetter(gridPosition)
+//        }
+//
+//        // إيقاف اختيار الـ Hint
+//        isSelectingSlotForLetterHint = false
+//
+//        // حفظ هذا الـ slot فقط
+//        logoHintViewModel.unlockLetterHintAt(
+//            currentLogoId,
+//            slotIndex
+//        )
+//
+//        // زر Letter يصبح مستخدم
+//        updateLetterButtonState(true)
+//
+//        // لا تستخدم:
+//        // clearQuestionMarks()
+//        //
+//        // ولا تستخدم:
+//        // unlockLetterHint(currentLogoId)
+//
+//        // فحص الإجابة فقط إذا امتلأت جميع الخانات
+//        //checkAnswerComplete()
+//    }
+//
+//    private fun findAvailablePositionOfLetter(targetChar: Char): Int? {
+//
+//        if (!::lettersAdapter.isInitialized) {
+//            return null
+//        }
+//
+//        // أماكن الحروف المستخدمة حاليًا داخل الـ slots
+//        val usedPositions = slotSourcePositions.values.toSet()
+//
+//        // البحث عن أول حرف مطابق وغير مستخدم
+//        for (i in 0 until lettersAdapter.getItemCountSize()) {
+//
+//            val letter = lettersAdapter.getLetterAt(i)
+//
+//            if (
+//                letter.uppercaseChar() == targetChar.uppercaseChar() &&
+//                !usedPositions.contains(i)
+//            ) {
+//                return i
+//            }
+//        }
+//
+//        return null
+//    }
+//
+//    private fun revealLett2erAtSlot(slotIndex: Int) {
+//        val correctAnswer = currentLogo?.lo_name ?: return
+//        val tvSlot = answerSlots.getOrNull(slotIndex) ?: return
+//
+//        if (slotIndex < correctAnswer.length && correctAnswer[slotIndex] != ' ') {
+//            val correctChar = correctAnswer[slotIndex].uppercaseChar()
+//
+//            removeLetterFromAnswer(slotIndex)
+//
+//            tvSlot.text = correctChar.toString()
+//            tvSlot.setTextColor(Color.YELLOW)
+//
+//            if (::lettersAdapter.isInitialized) {
+//                lettersAdapter.hideLetterByChar(correctChar)
+//            }
+//
+//            val currentMask = logoHintViewModel.currentLogoHintState.value?.letter ?: 0
+//            val updatedMask = currentMask or (1 shl slotIndex)
+//            logoHintViewModel.unlockLetterHint(currentLogoId)
+//
+//            clearQuestionMarks()
+//            isSelectingSlotForLetterHint = false
+//            updateLetterButtonState(true)
+//
+//            checkAnswerComplete()
+//        }
+//    }
+//
+//    private fun updatePlayerButtonState(isUsed: Boolean) {
+//        binding.player.isSelected = isUsed
+//        binding.player.alpha = if (isUsed) 0.5f else 1.0f
+//    }
+//
+//    fun showBlackCustomDialog(message: String, imageResId: Int) {
+//        val builder = AlertDialog.Builder(this)
+//        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_hint_info, null)
+//        builder.setView(dialogView)
+//
+//        val dialog = builder.create()
+//
+//        val ivDialogIcon = dialogView.findViewById<ImageView>(R.id.ivDialogIcon)
+//        val tvDialogMessage = dialogView.findViewById<TextView>(R.id.tvDialogMessage)
+//        val btnOk = dialogView.findViewById<Button>(R.id.btnOk)
+//
+//        ivDialogIcon.setImageResource(imageResId)
+//        tvDialogMessage.text = message
+//
+//        btnOk.setOnClickListener { dialog.dismiss() }
+//
+//        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+//        dialog.show()
+//    }
+//
+//    private fun setupKeyboard(correctAnswer: String) {
+//        val shuffledLetters = generateShuffledLetters(correctAnswer)
+//
+//        lettersAdapter = LettersAdapter(this, shuffledLetters) { position, letter ->
+//            addLetterToAnswer(position, letter)
+//        }
+//        binding.ballsGrid.adapter = lettersAdapter
+//
+//        binding.spacesGrid1.removeAllViews()
+//        binding.spacesGrid2.removeAllViews()
+//        answerSlots.clear()
+//        slotSourcePositions.clear()
+//
+//        for (i in correctAnswer.indices) {
+//            if (correctAnswer[i] == ' ') {
+//                val spaceView = View(this).apply {
+//                    layoutParams = LinearLayout.LayoutParams(24, 10)
+//                }
+//                binding.spacesGrid1.addView(spaceView)
+//                answerSlots.add(null)
+//            } else {
+//                val slotView = LayoutInflater.from(this).inflate(R.layout.item_letter_ball, binding.spacesGrid1, false) as FrameLayout
+//                val tvSlot = slotView.findViewById<TextView>(R.id.tvLetter)
+//
+//                tvSlot.text = ""
+//                tvSlot.setBackgroundResource(R.drawable.hint_background)
+//
+//                val slotIndex = i
+//                slotView.setOnClickListener {
+//                    if (isSelectingSlotForLetterHint) {
+//                        revealLetterAtSlot(slotIndex)
+//                    } else {
+//                        removeLetterFromAnswer(slotIndex)
+//                    }
+//                }
+//
+//                if (i < 8) {
+//                    binding.spacesGrid1.addView(slotView)
+//                } else {
+//                    binding.spacesGrid2.addView(slotView)
+//                }
+//
+//                answerSlots.add(tvSlot)
+//            }
+//        }
+//    }
+//
+//    private fun addLetterToAnswer(gridPosition: Int, letter: Char) {
+//        if (isSelectingSlotForLetterHint) {
+//            clearQuestionMarks()
+//            isSelectingSlotForLetterHint = false
+//        }
+//
+//        for (i in answerSlots.indices) {
+//            val tvSlot = answerSlots[i]
+//            if (tvSlot != null && tvSlot.text.isEmpty()) {
+//
+//                try {
+//                    val mediaPlayer = MediaPlayer.create(this, R.raw.kick)
+//                    mediaPlayer?.start()
+//                    mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+//                } catch (e: Exception) {
+//                    e.printStackTrace()
+//                }
+//
+//                tvSlot.text = letter.toString()
+//                tvSlot.setTextColor(Color.WHITE)
+//                slotSourcePositions[i] = gridPosition
+//                lettersAdapter.hideLetter(gridPosition)
+//                checkAnswerComplete()
+//                break
+//            }
+//        }
+//    }
+//
+//    private fun removeLetterFromAnswer(slotIndex: Int) {
+//        val tvSlot = answerSlots[slotIndex]
+//        if (tvSlot != null && tvSlot.text.isNotEmpty()) {
+//            if (tvSlot.currentTextColor == Color.YELLOW) {
+//                return
+//            }
+//
+//            try {
+//                val mediaPlayer = MediaPlayer.create(this, R.raw.space)
+//                mediaPlayer?.start()
+//                mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//            }
+//
+//            val originalGridPos = slotSourcePositions[slotIndex]
+//            if (originalGridPos != null) {
+//                lettersAdapter.showLetter(originalGridPos)
+//            }
+//            tvSlot.text = ""
+//            slotSourcePositions.remove(slotIndex)
+//        }
+//    }
+//
+//    private fun checkAnswerComplete() {
+//        val currentEnteredAnswer = answerSlots.map { it?.text ?: "" }.joinToString("").trim()
+//        val realAnswer = currentLogo?.lo_name?.replace(" ", "")?.trim() ?: ""
+//
+//        if (currentEnteredAnswer.length == realAnswer.length) {
+//            if (currentEnteredAnswer.equals(realAnswer, ignoreCase = true)) {
+//                try {
+//                    val mediaPlayer = MediaPlayer.create(this, R.raw.right_crowd)
+//                    mediaPlayer?.start()
+//                    mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+//                } catch (e: Exception) {
+//                    e.printStackTrace()
+//                }
+//
+//                hintViewModel.rewardHints(2)
+//                Toast.makeText(applicationContext, "+2 Hints!", Toast.LENGTH_SHORT).show()
+//                logoHintViewModel.submitCorrectAnswer(currentLogoId, 100, currentLevelId)
+//
+//                binding.root.postDelayed({
+//                    currentLogo?.let { showCompletedLayout(it) }
+//                }, 300)
+//
+//            } else {
+//                if (hintViewModel.currentHints.value > 0) {
+//                    hintViewModel.useHint()
+//                    Toast.makeText(applicationContext, "-1 Hint!", Toast.LENGTH_SHORT).show()
+//                } else {
+//                    Toast.makeText(applicationContext, "إجابة خاطئة!", Toast.LENGTH_SHORT).show()
+//                }
+//
+//                try {
+//                    val mediaPlayer = MediaPlayer.create(this, R.raw.wrong_crowd)
+//                    mediaPlayer?.start()
+//                    mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+//                } catch (e: Exception) {
+//                    e.printStackTrace()
+//                }
+//
+//                binding.wrong.visibility = View.VISIBLE
+//
+//                binding.root.postDelayed({
+//                    binding.wrong.visibility = View.GONE
+//
+//                    for (i in answerSlots.indices) {
+//                        removeLetterFromAnswer(i)
+//                    }
+//                }, 1500)
+//            }
+//        }
+//    }
+//
+//    private fun generateShuffledLetters(answer: String): List<Char> {
+//        val cleanAnswer = answer.replace(" ", "").uppercase().trim()
+//        val lettersList = cleanAnswer.toMutableList()
+//        val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+//
+//        while (lettersList.size < 18) {
+//            val randomChar = alphabet.random()
+//            if (lettersList.count { it == randomChar } < 2) {
+//                lettersList.add(randomChar)
+//            }
+//        }
+//        return lettersList.shuffled()
+//    }
+//
+//    private inline fun handleHintUsage(onHintUnlocked: () -> Unit) {
+//        if (hintViewModel.currentHints.value > 0) {
+//            hintViewModel.useHint()
+//            onHintUnlocked()
+//        } else {
+//            Toast.makeText(this, "لا يوجد رصيد مساعدات كافٍ!", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+//
+//    private fun showCompletedLayout(logo: LogoEntity) {
+//        binding.leftHints.visibility = View.GONE
+//        binding.rightHints.visibility = View.GONE
+//        binding.ballsGrid.visibility = View.GONE
+//
+//        binding.completedLayout.visibility = View.VISIBLE
+//        binding.loName.text = logo.lo_name
+//        binding.points.text = "${logo.lo_points} Pt"
+//    }
+//
+//    private fun navigateToNextLogo() {
+//        val logosList = logoViewModel.logos.value
+//        if (logosList.isNotEmpty()) {
+//            val currentIndex = logosList.indexOfFirst { it._loid == currentLogoId }
+//
+//            if (currentIndex != -1 && currentIndex < logosList.size - 1) {
+//                val nextLogo = logosList[currentIndex + 1]
+//                updateActivityForNewLogo(nextLogo._loid ?: 0)
+//            } else {
+//                Toast.makeText(this, "لقد وصلت لآخر شعار في هذا المستوى!", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//    }
+//
+//    private fun navigateToPrevLogo() {
+//        val logosList = logoViewModel.logos.value
+//        if (logosList.isNotEmpty()) {
+//            val currentIndex = logosList.indexOfFirst { it._loid == currentLogoId }
+//
+//            if (currentIndex > 0) {
+//                val prevLogo = logosList[currentIndex - 1]
+//                updateActivityForNewLogo(prevLogo._loid ?: 0)
+//            } else {
+//                Toast.makeText(this, "هذا هو الشعار الأول في المستوى!", Toast.LENGTH_SHORT).show()
+//            }
+//        }
+//    }
+//
+//    private fun updateHideButtonState(isUsed: Boolean) {
+//        binding.hide.isSelected = isUsed
+//        binding.hide.isEnabled = !isUsed
+//        binding.hide.alpha = if (isUsed) 0.5f else 1.0f
+//    }
+//
+//    private fun updateLetterButtonState(isUsed: Boolean) {
+//        (!isUsed).also { binding.letter.isEnabled = it }
+//        binding.letter.alpha = if (isUsed) 0.5f else 1.0f
+//    }
+//
+//    private fun updateActivityForNewLogo(newLogoId: Int) {
+//        currentLogoId = newLogoId
+//        isSelectingSlotForLetterHint = false
+//        isWhistlePlayedForCurrentLogo = false
+//
+//        binding.whistle.visibility = View.GONE
+//        binding.wrong.visibility = View.GONE
+//        binding.infoPopup.visibility = View.GONE
+//        binding.playerPopup.visibility = View.GONE
+//
+//        logoHintViewModel.loadHintStateForLogo(currentLogoId)
+//        logoViewModel.loadLogosForLevel(currentLevelId)
+//    }
+//}

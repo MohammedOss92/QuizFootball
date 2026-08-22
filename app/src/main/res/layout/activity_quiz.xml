@@ -45,6 +45,15 @@
                 android:src="@drawable/letter_hint" />
 
             <ImageButton
+                android:id="@+id/letter2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="5dp"
+                android:background="@drawable/hint_clicked"
+                android:scaleType="fitXY"
+                android:src="@drawable/letter_hint" />
+
+            <ImageButton
                 android:id="@+id/player"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

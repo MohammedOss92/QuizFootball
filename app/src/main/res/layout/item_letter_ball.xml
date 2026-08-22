@@ -11,5 +11,6 @@
         android:gravity="center"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
+        android:background="@drawable/hintt"
         android:textStyle="bold" />
 </FrameLayout>
