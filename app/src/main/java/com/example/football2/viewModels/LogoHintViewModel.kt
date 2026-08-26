@@ -62,7 +62,7 @@ class LogoHintViewModel(
     }
 
 
-    fun loadHintStateForLogo(logoId: Int) {
+    fun loadHintStateForLogo(logoId: Int?) {
         viewModelScope.launch(Dispatchers.IO) {
             // 🟢 إرجاع قيمة null مؤقتاً لتصفير الحالة للشعار الجديد
             _currentLogoHintState.value = null

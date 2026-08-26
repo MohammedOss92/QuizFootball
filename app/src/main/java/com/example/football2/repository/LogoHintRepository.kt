@@ -2,7 +2,6 @@ package com.example.football2.repository
 
 import androidx.lifecycle.LiveData
 import com.example.football2.dao.LogoHintDao
-import com.example.football2.entity.HintEntity
 import com.example.football2.entity.LogoHintEntity
 
 class LogoHintRepository(private val logoHintDao: LogoHintDao) {
@@ -25,7 +24,7 @@ class LogoHintRepository(private val logoHintDao: LogoHintDao) {
         logoHintDao.updateHideHint(logoId)
     }
 
-    suspend fun getHintStateForLogo(logoId: Int): LogoHintEntity? {
+    suspend fun getHintStateForLogo(logoId: Int?): LogoHintEntity? {
         return logoHintDao.getHintStateForLogo(logoId)
     }
 

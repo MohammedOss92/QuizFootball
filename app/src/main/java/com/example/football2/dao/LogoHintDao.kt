@@ -27,7 +27,7 @@ interface LogoHintDao {
 
     // 🟢 التصحيح: البحث حسب lo_hi_logo وليس _lo_hi_id
     @Query("SELECT * FROM logo_hints WHERE lo_hi_logo = :logoId LIMIT 1")
-    suspend fun getHintStateForLogo(logoId: Int): LogoHintEntity?
+    suspend fun getHintStateForLogo(logoId: Int?): LogoHintEntity?
 
     @Query("SELECT * FROM logo_hints WHERE lo_hi_logo = :logoId")
     fun getLogoHintStateLiveData(logoId: Int): LiveData<LogoHintEntity?>

@@ -16,8 +16,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.football2.adabter.LettersAdapter
 import com.example.football2.databinding.ActivityQuizBinding
 import com.example.football2.db.AppDatabase
@@ -53,6 +55,8 @@ class QuizActivity : AppCompatActivity() {
     private var isSelectingSlotForLetter2Hint = false
 
     private var isWhistlePlayedForCurrentLogo = false
+
+    private var currentLogosList: List<LogoEntity> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -104,20 +108,45 @@ class QuizActivity : AppCompatActivity() {
             }
         }
 
+//        lifecycleScope.launch {
+//            logoViewModel.logos.collect { logosList ->
+//                currentLogo = logosList.find { it._loid == currentLogoId }
+//                currentLogo?.let { logo ->
+//                    val resId = resources.getIdentifier(logo.lo_image, "drawable", packageName)
+//                    if (resId != 0) binding.logo.setImageResource(resId)
+//
+//                    if (logo.lo_completed == "1") {
+//                        showCompletedLayout(logo)
+//                    } else {
+//                        binding.completedLayout.visibility = View.GONE
+//
+//                        if (!isWhistlePlayedForCurrentLogo) {
+//                            playWhistleAnimationAndStartGame(logo)
+//                        }
+//                    }
+//                }
+//            }
+//        }
+
         lifecycleScope.launch {
-            logoViewModel.logos.collect { logosList ->
-                currentLogo = logosList.find { it._loid == currentLogoId }
-                currentLogo?.let { logo ->
-                    val resId = resources.getIdentifier(logo.lo_image, "drawable", packageName)
-                    if (resId != 0) binding.logo.setImageResource(resId)
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                logoViewModel.logos.collect { logosList ->
+                    // 🟢 حفظ القائمة في المتغير المحلي لضمان توفرها دائماً للأزرار
+                    currentLogosList = logosList
 
-                    if (logo.lo_completed == "1") {
-                        showCompletedLayout(logo)
-                    } else {
-                        binding.completedLayout.visibility = View.GONE
+                    currentLogo = logosList.find { it._loid == currentLogoId }
+                    currentLogo?.let { logo ->
+                        val resId = resources.getIdentifier(logo.lo_image, "drawable", packageName)
+                        if (resId != 0) binding.logo.setImageResource(resId)
 
-                        if (!isWhistlePlayedForCurrentLogo) {
-                            playWhistleAnimationAndStartGame(logo)
+                        if (logo.lo_completed == "1") {
+                            showCompletedLayout(logo)
+                        } else {
+                            binding.completedLayout.visibility = View.GONE
+
+                            if (!isWhistlePlayedForCurrentLogo) {
+                                playWhistleAnimationAndStartGame(logo)
+                            }
                         }
                     }
                 }
@@ -789,25 +818,59 @@ class QuizActivity : AppCompatActivity() {
     }
 
     private fun navigateToNextLogo() {
-        val logosList = logoViewModel.logos.value
-        if (logosList.isNotEmpty()) {
-            val currentIndex = logosList.indexOfFirst { it._loid == currentLogoId }
+        if (currentLogosList.isEmpty()) {
+            Toast.makeText(this, "جاري تحميل البيانات...", Toast.LENGTH_SHORT).show()
+            return
+        }
 
-            if (currentIndex != -1 && currentIndex < logosList.size - 1) {
-                val nextLogo = logosList[currentIndex + 1]
-                updateActivityForNewLogo(nextLogo._loid ?: 0)
-            }
+        val currentIndex = currentLogosList.indexOfFirst { it._loid == currentLogoId }
+        if (currentIndex != -1 && currentIndex < currentLogosList.size - 1) {
+            val nextLogo = currentLogosList[currentIndex + 1]
+            switchLogo(nextLogo._loid)
+        } else {
+            Toast.makeText(this, "هذا هو الشعار الأخير في هذا المستوى!", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun navigateToPrevLogo() {
-        val logosList = logoViewModel.logos.value
-        if (logosList.isNotEmpty()) {
-            val currentIndex = logosList.indexOfFirst { it._loid == currentLogoId }
+        if (currentLogosList.isEmpty()) {
+            Toast.makeText(this, "جاري تحميل البيانات...", Toast.LENGTH_SHORT).show()
+            return
+        }
 
-            if (currentIndex > 0) {
-                val prevLogo = logosList[currentIndex - 1]
-                updateActivityForNewLogo(prevLogo._loid ?: 0)
+        val currentIndex = currentLogosList.indexOfFirst { it._loid == currentLogoId }
+        if (currentIndex > 0) {
+            val prevLogo = currentLogosList[currentIndex - 1]
+            switchLogo(prevLogo._loid)
+        } else {
+            Toast.makeText(this, "هذا هو الشعار الأول!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun switchLogo(newLogoId: Int?) {
+        if (newLogoId != null) {
+            currentLogoId = newLogoId
+        }
+        isWhistlePlayedForCurrentLogo = false
+
+        // إعادة تحميل تلميحات الشعار الجديد
+        logoHintViewModel.loadHintStateForLogo(newLogoId)
+
+        // البحث عن الشعار في القائمة المحلية وتحديث الواجهة
+        val logo = currentLogosList.find { it._loid == currentLogoId }
+
+        logo?.let {
+            val resId = resources.getIdentifier(it.lo_image, "drawable", packageName)
+            if (resId != 0) binding.logo.setImageResource(resId)
+
+            if (it.lo_completed == "1") {
+                showCompletedLayout(it)
+            } else {
+                binding.completedLayout.visibility = View.GONE
+                binding.leftHints.visibility = View.VISIBLE
+                binding.rightHints.visibility = View.VISIBLE
+                binding.ballsGrid.visibility = View.VISIBLE
+                playWhistleAnimationAndStartGame(it)
             }
         }
     }
