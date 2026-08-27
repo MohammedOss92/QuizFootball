@@ -1,6 +1,5 @@
 package com.example.football2.viewModels
 
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.football2.repository.GameControlRepository
@@ -21,16 +20,23 @@ class ViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when {
             modelClass.isAssignableFrom(LevelViewModel::class.java) -> {
-                LevelViewModel(levelRepository!!) as T
+                requireNotNull(levelRepository) { "LevelRepository must not be null for LevelViewModel" }
+                LevelViewModel(levelRepository) as T
             }
             modelClass.isAssignableFrom(LogoViewModel::class.java) -> {
-                LogoViewModel(logoRepository!!) as T
+                requireNotNull(logoRepository) { "LogoRepository must not be null for LogoViewModel" }
+                requireNotNull(hintRepository) { "HintRepository must not be null for LogoViewModel" }
+                requireNotNull(gameControlRepository) { "GameControlRepository must not be null for LogoViewModel" }
+                LogoViewModel(logoRepository, hintRepository, gameControlRepository) as T
             }
             modelClass.isAssignableFrom(HintViewModel::class.java) -> {
-                HintViewModel(hintRepository!!) as T
+                requireNotNull(hintRepository) { "HintRepository must not be null for HintViewModel" }
+                HintViewModel(hintRepository) as T
             }
             modelClass.isAssignableFrom(LogoHintViewModel::class.java) -> {
-                LogoHintViewModel(logoHintRepository!!, gameControlRepository!!) as T
+                requireNotNull(logoHintRepository) { "LogoHintRepository must not be null for LogoHintViewModel" }
+                requireNotNull(gameControlRepository) { "GameControlRepository must not be null for LogoHintViewModel" }
+                LogoHintViewModel(logoHintRepository, gameControlRepository) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }

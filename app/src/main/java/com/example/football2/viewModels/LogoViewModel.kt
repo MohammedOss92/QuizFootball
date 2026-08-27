@@ -4,13 +4,15 @@ package com.example.football2.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.football2.entity.LogoEntity
+import com.example.football2.repository.GameControlRepository
+import com.example.football2.repository.HintRepository
 import com.example.football2.repository.LogoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class LogoViewModel(private val logoRepository: LogoRepository) : ViewModel() {
+class LogoViewModel(private val logoRepository: LogoRepository, private val hintRepository: HintRepository, private val gameControlRepository: GameControlRepository) : ViewModel() {
 
     private val _logos = MutableStateFlow<List<LogoEntity>>(emptyList())
     val logos: StateFlow<List<LogoEntity>> = _logos.asStateFlow()
@@ -65,4 +67,19 @@ class LogoViewModel(private val logoRepository: LogoRepository) : ViewModel() {
     }
 
 
+    suspend fun getTotalScore(): Int = logoRepository.getTotalScore()
+    suspend fun getCurrentHints(): Int = hintRepository.getCurrentHintsCount()
+    suspend fun getUsedHints(): Int = hintRepository.getUsedHintsCount()
+
+    // 2. Logos & Medals
+    suspend fun getTotalLogosCount(): Int = logoRepository.getTotalLogosCount()
+    suspend fun getCompletedLogosCount(): Int = logoRepository.getCompletedLogosCount()
+    suspend fun getGoldMedalsCount(): Int = logoRepository.getGoldMedalsCount()
+    suspend fun getSilverMedalsCount(): Int = logoRepository.getSilverMedalsCount()
+    suspend fun getBronzeMedalsCount(): Int = logoRepository.getBronzeMedalsCount()
+
+    // 3. Levels
+    suspend fun getTotalLevelsCount(): Int = gameControlRepository.getTotalLevelsCount()
+    suspend fun getOpenLevelsCount(): Int = gameControlRepository.getOpenLevelsCount()
+    suspend fun getCompletedLevelsCount(): Int = gameControlRepository.getCompletedLevelsCount()
 }

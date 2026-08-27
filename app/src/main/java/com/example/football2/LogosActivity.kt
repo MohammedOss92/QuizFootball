@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.GridLayoutManager
 import com.example.football2.databinding.ActivityLogosBinding
 import com.example.football2.adabter.LogosAdapter
 import com.example.football2.db.AppDatabase
+import com.example.football2.repository.GameControlRepository
+import com.example.football2.repository.HintRepository
 import com.example.football2.repository.LogoRepository
 import com.example.football2.viewModels.LogoViewModel
 import com.example.football2.viewModels.ViewModelFactory
@@ -37,11 +39,34 @@ class LogosActivity : AppCompatActivity() {
         // يمكنك تخصيص العنوان العلوي بناءً على رقم المستوى الممرر
         binding.tvLevelTitle.text = "المستوى $currentLevelId"
 
-        // 3. إعداد الـ ViewModel يدوياً بدون Injection باستخدام الـ Factory
         val database = AppDatabase.getDatabase(this)
-        val logoRepository = LogoRepository(database.logoDao())
-        val factory = ViewModelFactory(logoRepository = logoRepository)
+
+        // 2. إنشاء جميع الـ Repositories المطلوبة
+        val logoRepo = LogoRepository(database.logoDao())
+        val hintRepo = HintRepository(database.hintDao())
+        val gameControlRepo = GameControlRepository(
+            database.gameControlDao(),
+            database.logoDao(),
+            database.levelDao(),
+            database.hintDao(),
+            database.logoHintDao()
+        )
+
+        // 3. تمرير الـ Repositories مع تسمية المعاملات لمنع أي التباس
+        val factory = ViewModelFactory(
+            logoRepository = logoRepo,
+            hintRepository = hintRepo, // 👈 هذا كان مفقوداً أو يتلقى قيمة null
+            gameControlRepository = gameControlRepo
+        )
+
+        // 4. الحصول على الـ ViewModel
         logoViewModel = ViewModelProvider(this, factory)[LogoViewModel::class.java]
+
+
+
+
+
+        // 3. إعداد الـ ViewModel يدوياً بدون Injection باستخدام الـ Factory
 
         // 4. تهيئة الـ RecyclerView والـ Adapter
         setupRecyclerView()

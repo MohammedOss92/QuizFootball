@@ -22,4 +22,9 @@ class GameControlRepository(
     suspend fun resetGame() {
         gameControlDao.resetGame(logoDao, levelDao, hintDao, logoHintDao)
     }
+
+    // 🟢 ربط استعلامات المستويات مع LevelDao
+    suspend fun getTotalLevelsCount(): Int = levelDao.getTotalLevelsCount()
+    suspend fun getOpenLevelsCount(): Int = levelDao.getOpenLevelsCount()
+    suspend fun getCompletedLevelsCount(): Int = levelDao.getCompletedLevelsCount()
 }

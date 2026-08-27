@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/field"
+    android:orientation="vertical">
+
+    <!-- شريط العلوى (Header) يحتوي على زر Back وعنوان STATISTICS -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#99000000"
+        android:paddingHorizontal="16dp">
+
+        <Button
+            android:id="@+id/btnBack"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_centerVertical="true"
+            android:background="@drawable/back"
+            android:text="Back"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="STATISTICS"
+            android:textColor="@android:color/white"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
+
+    <!-- محتوى الإحصائيات (قابل للتمرير Scrollable) -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- القسم الأول: Score & Hints -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginBottom="8dp"
+                android:background="#8BC34A"
+                android:gravity="center"
+                android:text="Score &amp; Hints"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:background="#66000000"
+                android:orientation="vertical"
+                android:padding="8dp">
+
+                <include layout="@layout/item_stat_row" android:id="@+id/rowTotalScore" />
+                <include layout="@layout/item_stat_row" android:id="@+id/rowTotalHints" />
+                <include layout="@layout/item_stat_row" android:id="@+id/rowUsedHints" />
+                <include layout="@layout/item_stat_row" android:id="@+id/rowCurrentHints" />
+            </LinearLayout>
+
+            <!-- القسم الثاني: Logos & Medals -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginBottom="8dp"
+                android:background="#8BC34A"
+                android:gravity="center"
+                android:text="Logos &amp; Medals"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:background="#66000000"
+                android:orientation="vertical"
+                android:padding="8dp">
+
+                <include layout="@layout/item_stat_row" android:id="@+id/rowTotalLogos" />
+                <include layout="@layout/item_stat_row" android:id="@+id/rowCompletedLogos" />
+                <include layout="@layout/item_stat_row" android:id="@+id/rowGoldMedals" />
+                <include layout="@layout/item_stat_row" android:id="@+id/rowSilverMedals" />
+                <include layout="@layout/item_stat_row" android:id="@+id/rowBronzeMedals" />
+            </LinearLayout>
+
+            <!-- القسم الثالث: Levels -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginBottom="8dp"
+                android:background="#8BC34A"
+                android:gravity="center"
+                android:text="Levels"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#66000000"
+                android:orientation="vertical"
+                android:padding="8dp">
+
+                <include layout="@layout/item_stat_row" android:id="@+id/rowTotalLevels" />
+                <include layout="@layout/item_stat_row" android:id="@+id/rowOpenLevels" />
+                <include layout="@layout/item_stat_row" android:id="@+id/rowCompletedLevels" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

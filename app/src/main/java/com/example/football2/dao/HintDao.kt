@@ -20,4 +20,10 @@ interface HintDao {
 
     @Query("UPDATE hints SET total_hints = 8, used_hints = 0 WHERE _hiid = 1")
     suspend fun resetHintsTable()
+
+    @Query("SELECT total_hints FROM hints LIMIT 1")
+    suspend fun getCurrentHintsCount(): Int
+
+    @Query("SELECT used_hints FROM hints LIMIT 1")
+    suspend fun getUsedHintsCount(): Int
 }

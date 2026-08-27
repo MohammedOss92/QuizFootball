@@ -25,6 +25,8 @@ class Activity : AppCompatActivity() {
 
         btnStatistics.setOnClickListener {
             // أضف شاشة الإحصائيات هنا لاحقاً
+            val intent = Intent(this, StaticsActivity::class.java)
+            startActivity(intent)
         }
 
         btnSettings.setOnClickListener {

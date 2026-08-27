@@ -22,5 +22,8 @@ class HintRepository(private val hintDao: HintDao) {
         hintDao.addUsedHint()
     }
 
+    suspend fun getCurrentHintsCount(): Int = hintDao.getCurrentHintsCount()
+    suspend fun getUsedHintsCount(): Int = hintDao.getUsedHintsCount()
+
 
 }

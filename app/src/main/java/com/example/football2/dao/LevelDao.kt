@@ -77,4 +77,9 @@ interface LevelDao {
 
         insertLevel(newLevel)
     }
+
+    @Query("SELECT COUNT(_leid) FROM levels")
+    suspend fun getTotalLevelsCount(): Int
+
+
 }
