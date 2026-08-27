@@ -31,6 +31,8 @@ class Activity : AppCompatActivity() {
 
         btnSettings.setOnClickListener {
             // أضف شاشة الإعدادات هنا لاحقاً
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
         }
 
         btnAbout.setOnClickListener {
