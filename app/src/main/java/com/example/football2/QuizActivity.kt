@@ -1,5 +1,6 @@
 package com.example.football2
 
+import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.media.MediaPlayer
@@ -191,13 +192,15 @@ class QuizActivity : AppCompatActivity() {
         binding.rightHints.visibility = View.INVISIBLE
         binding.ballsGrid.visibility = View.INVISIBLE
 
-        try {
-            val mediaPlayer = MediaPlayer.create(this, R.raw.whistle)
-            mediaPlayer?.start()
-            mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+//        try {
+//            val mediaPlayer = MediaPlayer.create(this, R.raw.whistle)
+//            mediaPlayer?.start()
+//            mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//        }
+        // تشغيل صوت الصافرة عند التفعيل
+        playSound(R.raw.whistle)
 
         binding.whistle.visibility = View.VISIBLE
         val animShakeWhistle = AnimationUtils.loadAnimation(applicationContext, R.anim.shake_whistle)
@@ -358,6 +361,7 @@ class QuizActivity : AppCompatActivity() {
 
         // 🟢 الزر الأول: ينشط isSelectingSlotForLetterHint
         binding.letter.setOnClickListener {
+            playSound(R.raw.kick)
             val builder = AlertDialog.Builder(this)
             builder.setTitle("Hints")
             builder.setMessage("Show one letter!\nCost : 1 hint")
@@ -417,13 +421,14 @@ class QuizActivity : AppCompatActivity() {
                             )
                         }
 
-                        try {
-                            val mediaPlayer = MediaPlayer.create(this, R.raw.explosion)
-                            mediaPlayer?.start()
-                            mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
+//                        try {
+//                            val mediaPlayer = MediaPlayer.create(this, R.raw.explosion)
+//                            mediaPlayer?.start()
+//                            mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+//                        } catch (e: Exception) {
+//                            e.printStackTrace()
+//                        }
+                        playSound(R.raw.explosion)
 
                         updateHideButtonState(true)
                         logoHintViewModel.unlockHideHint(currentLogoId)
@@ -673,13 +678,16 @@ class QuizActivity : AppCompatActivity() {
         for (i in answerSlots.indices) {
             val tvSlot = answerSlots[i]
             if (tvSlot != null && tvSlot.text.isEmpty()) {
-                try {
-                    val mediaPlayer = MediaPlayer.create(this, R.raw.kick)
-                    mediaPlayer?.start()
-                    mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+//
+//                try {
+//                    val mediaPlayer = MediaPlayer.create(this, R.raw.kick)
+//                    mediaPlayer?.start()
+//                    mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+//                } catch (e: Exception) {
+//                    e.printStackTrace()
+//                }
+                // تشغيل صوت النقر على الكرات
+                playSound(R.raw.kick)
 
                 tvSlot.text = letter.toString()
                 tvSlot.setTextColor(Color.WHITE)
@@ -698,13 +706,14 @@ class QuizActivity : AppCompatActivity() {
                 return
             }
 
-            try {
-                val mediaPlayer = MediaPlayer.create(this, R.raw.space)
-                mediaPlayer?.start()
-                mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+//            try {
+//                val mediaPlayer = MediaPlayer.create(this, R.raw.space)
+//                mediaPlayer?.start()
+//                mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//            }
+            playSound(R.raw.space)
 
             val originalGridPos = slotSourcePositions[slotIndex]
             if (originalGridPos != null) {
@@ -721,13 +730,14 @@ class QuizActivity : AppCompatActivity() {
 
         if (currentEnteredAnswer.length == realAnswer.length) {
             if (currentEnteredAnswer.equals(realAnswer, ignoreCase = true)) {
-                try {
-                    val mediaPlayer = MediaPlayer.create(this, R.raw.right_crowd)
-                    mediaPlayer?.start()
-                    mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+//                try {
+//                    val mediaPlayer = MediaPlayer.create(this, R.raw.right_crowd)
+//                    mediaPlayer?.start()
+//                    mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+//                } catch (e: Exception) {
+//                    e.printStackTrace()
+//                }
+                playSound(R.raw.wrong_crowd)
 
                 hintViewModel.rewardHints(2)
                 Toast.makeText(applicationContext, "+2 Hints!", Toast.LENGTH_SHORT).show()
@@ -880,6 +890,24 @@ class QuizActivity : AppCompatActivity() {
         isWhistlePlayedForCurrentLogo = false
         logoHintViewModel.loadHintStateForLogo(currentLogoId)
         logoViewModel.loadLogosForLevel(currentLevelId)
+    }
+
+    // دالة للتحقق مما إذا كان الصوت مفعل من الإعدادات
+    private fun isSoundEnabled(): Boolean {
+        val prefs = getSharedPreferences("game_settings", Context.MODE_PRIVATE)
+        return prefs.getBoolean("sound_effects", true)
+    }
+
+    // دالة موحدة لتشغيل الأصوات مع التحقق التلقائي
+    private fun playSound(soundResId: Int) {
+        if (!isSoundEnabled()) return
+        try {
+            val mediaPlayer = MediaPlayer.create(this, soundResId)
+            mediaPlayer?.start()
+            mediaPlayer?.setOnCompletionListener { mp -> mp.release() }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
 //findAvailablePositionOfLetter
