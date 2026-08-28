@@ -556,6 +556,7 @@ class QuizActivity : AppCompatActivity() {
             slotSourcePositions[slotIndex] = gridPosition
             lettersAdapter.hideLetter(gridPosition)
         }
+        logoHintViewModel.unlockLetterHintAt(currentLogoId, slotIndex)
 
         updateLetter2ButtonState()
         checkAnswerComplete()
