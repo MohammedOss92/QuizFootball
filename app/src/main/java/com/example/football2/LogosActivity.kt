@@ -1,8 +1,11 @@
 package com.example.football2
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.view.View
+import android.widget.ImageButton
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -17,8 +20,6 @@ import com.example.football2.viewModels.LogoViewModel
 import com.example.football2.viewModels.ViewModelFactory
 
 import kotlinx.coroutines.launch
-import kotlin.jvm.java
-
 
 class LogosActivity : AppCompatActivity() {
 
@@ -29,19 +30,13 @@ class LogosActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 1. إعداد الـ View Binding لملف XML الذي صممناه سابقاً
         binding = ActivityLogosBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 2. استقبال الـ Level ID الممرر من شاشة المستويات
         currentLevelId = intent.getIntExtra("LEVEL_ID", 1)
-
-        // يمكنك تخصيص العنوان العلوي بناءً على رقم المستوى الممرر
-        binding.tvLevelTitle.text = "المستوى $currentLevelId"
 
         val database = AppDatabase.getDatabase(this)
 
-        // 2. إنشاء جميع الـ Repositories المطلوبة
         val logoRepo = LogoRepository(database.logoDao())
         val hintRepo = HintRepository(database.hintDao())
         val gameControlRepo = GameControlRepository(
@@ -52,40 +47,61 @@ class LogosActivity : AppCompatActivity() {
             database.logoHintDao()
         )
 
-        // 3. تمرير الـ Repositories مع تسمية المعاملات لمنع أي التباس
         val factory = ViewModelFactory(
             logoRepository = logoRepo,
-            hintRepository = hintRepo, // 👈 هذا كان مفقوداً أو يتلقى قيمة null
+            hintRepository = hintRepo,
             gameControlRepository = gameControlRepo
         )
 
-        // 4. الحصول على الـ ViewModel
         logoViewModel = ViewModelProvider(this, factory)[LogoViewModel::class.java]
 
-
-
-
-
-        // 3. إعداد الـ ViewModel يدوياً بدون Injection باستخدام الـ Factory
-
-        // 4. تهيئة الـ RecyclerView والـ Adapter
         setupRecyclerView()
-
-        // 5. مراقبة الـ StateFlow لجلب البيانات وتحديث الشاشة تلقائياً
         observeViewModel()
 
-        // 6. تحميل البيانات الخاصة بهذا المستوى
+        // 1. إعداد زر الرجوع والعنوان
+        setupHeaderUI()
+
         binding.progressBarLogos.visibility = View.VISIBLE
         logoViewModel.loadLogosForLevel(currentLevelId)
+    }
 
-        // زر العودة للخلف
-        binding.btnBack.setOnClickListener {
+    private fun setupHeaderUI() {
+        // إعداد عنوان المستوى أو الشاشة
+        val tvHeaderTitle = binding.titleBar1.findViewById<TextView>(R.id.tvHeaderTitle)
+            ?: binding.titleBar1.findViewById<TextView>(R.id.title)
+        tvHeaderTitle?.text = "LOGOS"
+
+        // إعداد زر الرجوع
+        val btnBack = binding.titleBar1.findViewById<View>(R.id.btnBack)
+
+            ?: binding.titleBar1.findViewById<View>(R.id.back1)
+
+        btnBack?.setOnClickListener {
             finish()
         }
     }
 
+    // 2. دالة حساب وتحديث الـ SCORE / HINTS
+    private fun updateHeaderCounter() {
+        lifecycleScope.launch {
+            // جلب المجموع الكلي للـ Score للشعارات المحلولة من الـ Repository
+            val totalScore = logoViewModel.getTotalScore()
+
+            val tvCounterValue = binding.titleBar1.findViewById<TextView>(R.id.tvCounterValue)
+                ?: binding.titleBar1.findViewById<TextView>(R.id.scoreValue)
+            val tvCounterLabel = binding.titleBar1.findViewById<TextView>(R.id.tvCounterLabel)
+                ?: binding.titleBar1.findViewById<TextView>(R.id.scoreTitle)
+
+//            tvCounterValue?.text = String.format("%03d", totalScore)
+            tvCounterValue?.text = String.format(java.util.Locale.ENGLISH, "%03d", totalScore)
+            tvCounterValue?.setTextColor(Color.parseColor("#FF4D4D"))
+
+            tvCounterLabel?.text = "SCORE"
+            tvCounterLabel?.setTextColor(Color.parseColor("#FF4D4D"))
+        }
+    }
+
     private fun setupRecyclerView() {
-        // تمرير الكائن المعدل LogoEntity لشاشة الـ Quiz
         logosAdapter = LogosAdapter { selectedLogo ->
             val intent = Intent(this, QuizActivity::class.java).apply {
                 putExtra("LOGO_ID", selectedLogo._loid ?: 0)
@@ -102,13 +118,9 @@ class LogosActivity : AppCompatActivity() {
     }
 
     private fun observeViewModel() {
-        // استخدام lifecycleScope لمراقبة الـ StateFlow بأمان في الـ Activity التقليدية
         lifecycleScope.launch {
             logoViewModel.logos.collect { logosList ->
-                // إخفاء مؤشر التحميل بمجرد وصول البيانات
                 binding.progressBarLogos.visibility = View.GONE
-
-                // تمرير القائمة المحدثة للـ Adapter ليقوم بعمل الـ DiffUtil وتحديث الواجهة
                 logosAdapter.submitList(logosList)
             }
         }
@@ -116,7 +128,8 @@ class LogosActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // إعادة تحميل البيانات عند العودة من شاشة اللعب لتحديث الشعارات التي تم حلّها فوراُ
         logoViewModel.loadLogosForLevel(currentLevelId)
+        // 3. تحديث الـ Score فور العودة من حل لغز في QuizActivity
+        updateHeaderCounter()
     }
 }

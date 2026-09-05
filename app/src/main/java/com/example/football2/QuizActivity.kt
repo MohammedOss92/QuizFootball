@@ -11,6 +11,7 @@ import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -280,8 +281,13 @@ class QuizActivity : AppCompatActivity() {
     }
 
     private fun setupActions() {
-        val btnBack = findViewById<View>(R.id.btnBack)
-        btnBack?.setOnClickListener { finish() }
+//
+
+
+
+        binding.titleBar.findViewById<ImageButton>(R.id.back2)?.setOnClickListener {
+            finish()
+        }
 
         binding.facebook.setOnClickListener {
             handleHintUsage {
@@ -738,7 +744,7 @@ class QuizActivity : AppCompatActivity() {
 //                } catch (e: Exception) {
 //                    e.printStackTrace()
 //                }
-                playSound(R.raw.wrong_crowd)
+                playSound(R.raw.right_crowd)
 
                 hintViewModel.rewardHints(2)
                 Toast.makeText(applicationContext, "+2 Hints!", Toast.LENGTH_SHORT).show()

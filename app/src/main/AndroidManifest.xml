@@ -20,10 +20,13 @@
         <activity
             android:name=".LogosActivity"
             android:exported="false"
+            android:theme="@style/Base.Theme.Football2"
+
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".QuizActivity"
             android:exported="false"
+            android:theme="@style/Base.Theme.Football2"
             android:windowSoftInputMode="adjustResize" />
 
         <meta-data

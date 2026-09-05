@@ -7,12 +7,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@drawable/field"
+        android:fitsSystemWindows="true"
         android:padding="0dp">
 
         <!-- شريط العنوان العلوي -->
         <include
             android:id="@+id/titleBar"
-            layout="@layout/title_bar" />
+            layout="@layout/title_bar2" />
 
         <!-- أزرار المساعدات اليمين (تعديل الظهور) -->
         <LinearLayout
