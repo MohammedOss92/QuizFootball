@@ -27,6 +27,7 @@ class LogosActivity : AppCompatActivity() {
     private lateinit var logoViewModel: LogoViewModel
     private lateinit var logosAdapter: LogosAdapter
     private var currentLevelId: Int = 0
+    private var currentLevelName: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,6 +35,7 @@ class LogosActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         currentLevelId = intent.getIntExtra("LEVEL_ID", 1)
+        currentLevelName = intent.getStringExtra("LEVEL_NAME") ?: "LOGOS"
 
         val database = AppDatabase.getDatabase(this)
 
@@ -69,7 +71,8 @@ class LogosActivity : AppCompatActivity() {
         // إعداد عنوان المستوى أو الشاشة
         val tvHeaderTitle = binding.titleBar1.findViewById<TextView>(R.id.tvHeaderTitle)
             ?: binding.titleBar1.findViewById<TextView>(R.id.title)
-        tvHeaderTitle?.text = "LOGOS"
+//        tvHeaderTitle?.text = "LOGOS"
+        tvHeaderTitle?.text = currentLevelName.uppercase()
 
         // إعداد زر الرجوع
         val btnBack = binding.titleBar1.findViewById<View>(R.id.btnBack)
