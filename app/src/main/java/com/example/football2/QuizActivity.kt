@@ -100,6 +100,8 @@ class QuizActivity : AppCompatActivity() {
         logoHintViewModel.loadHintStateForLogo(currentLogoId)
     }
 
+
+
     private fun observeGameStates() {
 
 
@@ -133,22 +135,17 @@ class QuizActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 logoViewModel.logos.collect { logosList ->
-                    // 🟢 حفظ القائمة في المتغير المحلي لضمان توفرها دائماً للأزرار
                     currentLogosList = logosList
 
-                    currentLogo = logosList.find { it._loid == currentLogoId }
-                    currentLogo?.let { logo ->
-                        val resId = resources.getIdentifier(logo.lo_image, "drawable", packageName)
-                        if (resId != 0) binding.logo.setImageResource(resId)
+                    // 🟢 تعريف foundLogo واستخدامه داخل نفس النطاق
+                    val foundLogo = logosList.find { it._loid == currentLogoId }
+                    if (foundLogo != null) {
+                        currentLogo = foundLogo
 
-                        if (logo.lo_completed == "1") {
-                            showCompletedLayout(logo)
-                        } else {
-                            binding.completedLayout.visibility = View.GONE
-
-                            if (!isWhistlePlayedForCurrentLogo) {
-                                playWhistleAnimationAndStartGame(logo)
-                            }
+                        if (foundLogo.lo_completed == "1") {
+                            showCompletedLayout(foundLogo)
+                        } else if (answerSlots.isEmpty()) {
+                            loadLogoData(foundLogo)
                         }
                     }
                 }
@@ -182,6 +179,36 @@ class QuizActivity : AppCompatActivity() {
 
                     applyRevealedLettersIfUnlocked()
                 }
+            }
+        }
+    }
+
+    private fun loadLogoData(logo: LogoEntity) {
+        val resId = resources.getIdentifier(logo.lo_image, "drawable", packageName)
+        if (resId != 0) binding.logo.setImageResource(resId)
+
+        // تصفير أزرار المساعدات
+        updateHideButtonState(false)
+        updateLetterButtonState(false)
+        updatePlayerButtonState(false)
+        isSelectingSlotForLetterHint = false
+        isSelectingSlotForLetter2Hint = false
+
+        if (logo.lo_completed == "1") {
+            showCompletedLayout(logo)
+        } else {
+            binding.completedLayout.visibility = View.GONE
+
+            if (!isWhistlePlayedForCurrentLogo) {
+                playWhistleAnimationAndStartGame(logo)
+            } else {
+                setupKeyboard(logo.lo_name ?: "")
+                applyHideHintIfUnlocked()
+                applyRevealedLettersIfUnlocked()
+
+                binding.leftHints.visibility = View.VISIBLE
+                binding.rightHints.visibility = View.VISIBLE
+                binding.ballsGrid.visibility = View.VISIBLE
             }
         }
     }
@@ -731,7 +758,52 @@ class QuizActivity : AppCompatActivity() {
         }
     }
 
-    private fun checkAnswerComplete() {
+    private fun changeLogo(newLogoId: Int) {
+        currentLogoId = newLogoId
+        isWhistlePlayedForCurrentLogo = true
+
+        isSelectingSlotForLetterHint = false
+        isSelectingSlotForLetter2Hint = false
+
+        // تفريغ الواجهات
+        answerSlots.clear()
+        slotSourcePositions.clear()
+        binding.spacesGrid1.removeAllViews()
+        binding.spacesGrid2.removeAllViews()
+
+        updateHideButtonState(false)
+        updateLetterButtonState(false)
+        updatePlayerButtonState(false)
+
+        // تحميل حالة التلميحات للوسام الجديد
+        logoHintViewModel.loadHintStateForLogo(currentLogoId)
+
+        // البحث عن الشعار في القائمة
+        val targetLogo = currentLogosList.find { it._loid == currentLogoId }
+
+        if (targetLogo != null) {
+            currentLogo = targetLogo
+
+            // تغيير الصورة
+            val resId = resources.getIdentifier(targetLogo.lo_image, "drawable", packageName)
+            if (resId != 0) binding.logo.setImageResource(resId)
+
+            // التحقق مما إذا كان الشعار مكتملاً (سواء تم حله سابقاً أو الآن)
+            if (targetLogo.lo_completed == "1") {
+                showCompletedLayout(targetLogo)
+            } else {
+                binding.completedLayout.visibility = View.GONE
+                binding.leftHints.visibility = View.VISIBLE
+                binding.rightHints.visibility = View.VISIBLE
+                binding.ballsGrid.visibility = View.VISIBLE
+
+                setupKeyboard(targetLogo.lo_name ?: "")
+                applyHideHintIfUnlocked()
+                applyRevealedLettersIfUnlocked()
+            }
+        }
+    }
+    private fun checkAnsw0erComplete() {
         val currentEnteredAnswer = answerSlots.map { it?.text ?: "" }.joinToString("").trim()
         val realAnswer = currentLogo?.lo_name?.replace(" ", "")?.trim() ?: ""
 
@@ -775,6 +847,47 @@ class QuizActivity : AppCompatActivity() {
                 binding.root.postDelayed({
                     binding.wrong.visibility = View.GONE
 
+                    for (i in answerSlots.indices) {
+                        removeLetterFromAnswer(i)
+                    }
+                }, 1500)
+            }
+        }
+    }
+
+    private fun checkAnswerComplete() {
+        val currentEnteredAnswer = answerSlots.map { it?.text ?: "" }.joinToString("").trim()
+        val realAnswer = currentLogo?.lo_name?.replace(" ", "")?.trim() ?: ""
+
+        if (currentEnteredAnswer.length == realAnswer.length) {
+            if (currentEnteredAnswer.equals(realAnswer, ignoreCase = true)) {
+                playSound(R.raw.right_crowd)
+
+                // 1. تحديث الشعار الحالي في الذاكرة والقائمة المحلية فوراً
+                currentLogo?.lo_completed = "1"
+                currentLogosList.find { it._loid == currentLogoId }?.lo_completed = "1"
+
+                hintViewModel.rewardHints(2)
+                Toast.makeText(applicationContext, "+2 Hints!", Toast.LENGTH_SHORT).show()
+                logoHintViewModel.submitCorrectAnswer(currentLogoId, 100, currentLevelId)
+
+                binding.root.postDelayed({
+                    currentLogo?.let { showCompletedLayout(it) }
+                }, 300)
+
+            } else {
+                if (hintViewModel.currentHints.value > 0) {
+                    hintViewModel.useHint()
+                    Toast.makeText(applicationContext, "-1 Hint!", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(applicationContext, "إجابة خاطئة!", Toast.LENGTH_SHORT).show()
+                }
+
+                playSound(R.raw.wrong_crowd)
+                binding.wrong.visibility = View.VISIBLE
+
+                binding.root.postDelayed({
+                    binding.wrong.visibility = View.GONE
                     for (i in answerSlots.indices) {
                         removeLetterFromAnswer(i)
                     }
@@ -863,6 +976,8 @@ class QuizActivity : AppCompatActivity() {
             Toast.makeText(this, "هذا هو الشعار الأول!", Toast.LENGTH_SHORT).show()
         }
     }
+
+
 
     private fun switchLogo(newLogoId: Int?) {
         if (newLogoId != null) {
