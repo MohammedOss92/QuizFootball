@@ -183,16 +183,28 @@ class QuizActivity : AppCompatActivity() {
         }
     }
 
+    private fun resetAllHintButtonsUI() {
+        updateHideButtonState(false)
+        updateLetterButtonState(false)
+        updatePlayerButtonState(false)
+
+        listOf(binding.hide, binding.letter, binding.letter2, binding.player, binding.facebook, binding.info).forEach { button ->
+            button.apply {
+                isSelected = false
+                isActivated = false
+                alpha = 1.0f
+                scaleX = 1.0f
+                scaleY = 1.0f
+            }
+        }
+    }
+
     private fun loadLogoData(logo: LogoEntity) {
         val resId = resources.getIdentifier(logo.lo_image, "drawable", packageName)
         if (resId != 0) binding.logo.setImageResource(resId)
 
         // تصفير أزرار المساعدات
-        updateHideButtonState(false)
-        updateLetterButtonState(false)
-        updatePlayerButtonState(false)
-        isSelectingSlotForLetterHint = false
-        isSelectingSlotForLetter2Hint = false
+        resetAllHintButtonsUI()
 
         if (logo.lo_completed == "1") {
             showCompletedLayout(logo)
@@ -758,51 +770,9 @@ class QuizActivity : AppCompatActivity() {
         }
     }
 
-    private fun changeLogo(newLogoId: Int) {
-        currentLogoId = newLogoId
-        isWhistlePlayedForCurrentLogo = true
 
-        isSelectingSlotForLetterHint = false
-        isSelectingSlotForLetter2Hint = false
 
-        // تفريغ الواجهات
-        answerSlots.clear()
-        slotSourcePositions.clear()
-        binding.spacesGrid1.removeAllViews()
-        binding.spacesGrid2.removeAllViews()
 
-        updateHideButtonState(false)
-        updateLetterButtonState(false)
-        updatePlayerButtonState(false)
-
-        // تحميل حالة التلميحات للوسام الجديد
-        logoHintViewModel.loadHintStateForLogo(currentLogoId)
-
-        // البحث عن الشعار في القائمة
-        val targetLogo = currentLogosList.find { it._loid == currentLogoId }
-
-        if (targetLogo != null) {
-            currentLogo = targetLogo
-
-            // تغيير الصورة
-            val resId = resources.getIdentifier(targetLogo.lo_image, "drawable", packageName)
-            if (resId != 0) binding.logo.setImageResource(resId)
-
-            // التحقق مما إذا كان الشعار مكتملاً (سواء تم حله سابقاً أو الآن)
-            if (targetLogo.lo_completed == "1") {
-                showCompletedLayout(targetLogo)
-            } else {
-                binding.completedLayout.visibility = View.GONE
-                binding.leftHints.visibility = View.VISIBLE
-                binding.rightHints.visibility = View.VISIBLE
-                binding.ballsGrid.visibility = View.VISIBLE
-
-                setupKeyboard(targetLogo.lo_name ?: "")
-                applyHideHintIfUnlocked()
-                applyRevealedLettersIfUnlocked()
-            }
-        }
-    }
     private fun checkAnsw0erComplete() {
         val currentEnteredAnswer = answerSlots.map { it?.text ?: "" }.joinToString("").trim()
         val realAnswer = currentLogo?.lo_name?.replace(" ", "")?.trim() ?: ""
@@ -980,18 +950,33 @@ class QuizActivity : AppCompatActivity() {
 
 
     private fun switchLogo(newLogoId: Int?) {
-        if (newLogoId != null) {
-            currentLogoId = newLogoId
-        }
-        isWhistlePlayedForCurrentLogo = false
+        if (newLogoId == null) return
 
-        // إعادة تحميل تلميحات الشعار الجديد
-        logoHintViewModel.loadHintStateForLogo(newLogoId)
+        currentLogoId = newLogoId
+        isWhistlePlayedForCurrentLogo = true // تفادي تكرار صافرة البداية في كل تنقل
 
-        // البحث عن الشعار في القائمة المحلية وتحديث الواجهة
+        // 1. إعادة ضبط كافة متغيرات المساعدات المحددة
+        isSelectingSlotForLetterHint = false
+        isSelectingSlotForLetter2Hint = false
+
+        // 2. تفريغ المصفوفات والـ Views القديمة فوراً
+        answerSlots.clear()
+        slotSourcePositions.clear()
+        binding.spacesGrid1.removeAllViews()
+        binding.spacesGrid2.removeAllViews()
+
+        // 3. إعادة تصفير خلفيات وحالات الأزرار في الـ UI
+        resetAllHintButtonsUI()
+
+        // 4. تحميل حالة التلميحات للشعار الجديد
+        logoHintViewModel.loadHintStateForLogo(currentLogoId)
+
+        // 5. جلب الشعار من القائمة وعرضه
         val logo = currentLogosList.find { it._loid == currentLogoId }
 
         logo?.let {
+            currentLogo = it
+
             val resId = resources.getIdentifier(it.lo_image, "drawable", packageName)
             if (resId != 0) binding.logo.setImageResource(resId)
 
@@ -1002,10 +987,45 @@ class QuizActivity : AppCompatActivity() {
                 binding.leftHints.visibility = View.VISIBLE
                 binding.rightHints.visibility = View.VISIBLE
                 binding.ballsGrid.visibility = View.VISIBLE
-                playWhistleAnimationAndStartGame(it)
+
+                // إعادة إنشاء الكيبورد والخانات للكلمة الجديدة
+                setupKeyboard(it.lo_name ?: "")
+
+                // تطبيق التلميحات المفتوحة سابقاً لهذا الشعار
+                applyHideHintIfUnlocked()
+                applyRevealedLettersIfUnlocked()
             }
         }
     }
+
+//    private fun switchLogo(newLogoId: Int?) {
+//        if (newLogoId != null) {
+//            currentLogoId = newLogoId
+//        }
+//        isWhistlePlayedForCurrentLogo = false
+//
+//
+//        // إعادة تحميل تلميحات الشعار الجديد
+//        logoHintViewModel.loadHintStateForLogo(newLogoId)
+//
+//        // البحث عن الشعار في القائمة المحلية وتحديث الواجهة
+//        val logo = currentLogosList.find { it._loid == currentLogoId }
+//
+//        logo?.let {
+//            val resId = resources.getIdentifier(it.lo_image, "drawable", packageName)
+//            if (resId != 0) binding.logo.setImageResource(resId)
+//
+//            if (it.lo_completed == "1") {
+//                showCompletedLayout(it)
+//            } else {
+//                binding.completedLayout.visibility = View.GONE
+//                binding.leftHints.visibility = View.VISIBLE
+//                binding.rightHints.visibility = View.VISIBLE
+//                binding.ballsGrid.visibility = View.VISIBLE
+//                playWhistleAnimationAndStartGame(it)
+//            }
+//        }
+//    }
 
     private fun updateActivityForNewLogo(newLogoId: Int) {
         currentLogoId = newLogoId
@@ -1031,6 +1051,8 @@ class QuizActivity : AppCompatActivity() {
             e.printStackTrace()
         }
     }
+
+
 }
 //findAvailablePositionOfLetter
 //revealLetterAtSlot و revealLetterAtSlot2
