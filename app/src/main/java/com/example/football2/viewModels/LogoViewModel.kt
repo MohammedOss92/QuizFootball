@@ -94,4 +94,24 @@ class LogoViewModel(private val logoRepository: LogoRepository, private val hint
         }
         return success
     }
+
+
+    suspend fun unlockLevelManually(levelId: Int, cost: Int = 500): Boolean {
+        // 1. جلب النقاط الحالية بآمان مع تحويل null إلى 0
+        val currentScore = getTotalScore() ?: 0
+
+        // 2. التحقق من كفاية النقاط
+        return if (currentScore >= cost) {
+            // تنفيذ عملية الخصم وفتح المستوى في قاعدة البيانات عبر الـ Repository
+            val isUnlocked = gameControlRepository.unlockLevelManually(levelId, cost)
+
+            if (isUnlocked) {
+                // تحديث النقاط بعد الخصم مباشرة
+                getTotalScore()
+            }
+            isUnlocked
+        } else {
+            false
+        }
+    }
 }

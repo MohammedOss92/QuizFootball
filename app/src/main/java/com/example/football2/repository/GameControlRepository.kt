@@ -42,14 +42,33 @@ class GameControlRepository(
         return false
     }
 
+
     suspend fun unlockLevelManually(levelId: Int, cost: Int = 500): Boolean {
-        val totalScore = logoDao.getTotalScore() ?: 0
-        return if (totalScore >= cost) {
-            logoDao.deductPoints(cost)      // 1. خصم النقاط
-            levelDao.unlockLevel(levelId)   // 2. إزالة القفل
-            true
-        } else {
-            false
+        val currentScore = logoDao.getTotalScore() ?: 0
+
+        if (currentScore >= cost) {
+            var remainingToDeduct = cost
+            val completedLogos = logoDao.getCompletedLogosWithPoints()
+
+            for (logo in completedLogos) {
+                if (remainingToDeduct <= 0) break
+
+                val logoPoints = logo.lo_points ?: 0
+                if (logoPoints <= remainingToDeduct) {
+                    remainingToDeduct -= logoPoints
+                    logo.lo_points = 0
+                } else {
+                    logo.lo_points = logoPoints - remainingToDeduct
+                    remainingToDeduct = 0
+                }
+                logoDao.updateLogo(logo)
+            }
+
+            // 🟢 فتح المستوى بعد الخصم
+            levelDao.unlockLevel(levelId)
+            return true
         }
+        return false
     }
+
 }

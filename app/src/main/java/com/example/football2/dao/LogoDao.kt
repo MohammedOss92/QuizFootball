@@ -9,6 +9,8 @@ interface LogoDao {
     @Query("SELECT SUM(lo_points) FROM logos WHERE lo_completed = 1 OR lo_completed = '1'")
     suspend fun getTotalScore(): Int?
 
+
+
     @Query("SELECT COUNT(_loid) FROM logos")
     suspend fun getTotalLogosCount(): Int
 
@@ -71,4 +73,15 @@ interface LogoDao {
 
     @Query("UPDATE logos SET lo_points = MAX(0, lo_points - :points) WHERE _loid = (SELECT _loid FROM logos WHERE lo_completed = 1 OR lo_completed = '1' LIMIT 1)")
     suspend fun deductPoints(points: Int)
+
+    @Query("UPDATE logos SET lo_points = CASE WHEN lo_points >= :amount THEN lo_points - :amount ELSE 0 END WHERE _loid = (SELECT _loid FROM logos WHERE (lo_completed = 1 OR lo_completed = '1') AND lo_points > 0 LIMIT 1)")
+    suspend fun deductScore(amount: Int)
+
+
+
+    @Query("SELECT * FROM logos WHERE (lo_completed = 1 OR lo_completed = '1') AND lo_points > 0")
+    suspend fun getCompletedLogosWithPoints(): List<LogoEntity>
+
+    @Update
+    suspend fun updateLogo(logo: LogoEntity)
 }

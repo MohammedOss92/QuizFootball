@@ -17,7 +17,7 @@ data class LogoEntity(
     val lo_player: String?,
     val lo_letter: String?,
     val lo_tries: Int?,
-    val lo_points: Int?,
+    var lo_points: Int?,
     var lo_completed: String?,
     val lo_image_sdcard: Int?,
     val lo_order: Int?,

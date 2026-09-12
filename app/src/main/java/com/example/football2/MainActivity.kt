@@ -155,38 +155,92 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+//    private fun setupRecyclerView() {
+//        levelAdapter = LevelAdapter { selectedLevel ->
+//            val currentList = levelAdapter.currentList
+//            val currentIndex = currentList.indexOf(selectedLevel)
+//
+//            // 1. فحص هل المستوى مفتوح تلقائياً بناءً على إنجاز المستوى السابق أو إن كان المستوى الأول
+//            val isLevelUnlocked = if (currentIndex == 0) {
+//                true
+//            } else {
+//                val previousLevel = currentList[currentIndex - 1]
+//                previousLevel.completed_logos_count >= 3 || selectedLevel.level.leOpen == 1
+//            }
+//
+//            if (isLevelUnlocked || selectedLevel.level.leid == 1) {
+//                // فتح شاشة الشعارات عند توفر الشرط
+//                val intent = Intent(this, LogosActivity::class.java).apply {
+//                    putExtra("LEVEL_ID", selectedLevel.level.leid)
+//                    putExtra("LEVEL_NAME", selectedLevel.level.leCountry ?: "LOGOS")
+//                }
+//                logosActivityLauncher.launch(intent)
+//            } else {
+//                // 2. 🟢 الفتح اليدوي: إظهار مربع حوار يتيح للمستخدم الشراء/الفتح يدويًا بالنقاط
+//                val unlockCost = 500
+//                AlertDialog.Builder(this)
+//                    .setTitle("فتح المستوى يدويًا")
+//                    .setMessage("هذا المستوى مغلق. هل ترغب في فتحه يدويًا مقابل $unlockCost نقطة؟")
+//                    .setPositiveButton("فتح الآن") { _, _ ->
+//                        lifecycleScope.launch {
+//                            val isUnlocked = logoViewModel.unlockLevelManually(selectedLevel.level.leid, unlockCost)
+//                            if (isUnlocked) {
+//                                Toast.makeText(this@MainActivity, "تم فتح المستوى بنجاح!", Toast.LENGTH_SHORT).show()
+//                                // تحديث البيانات والعداد
+//                                levelViewModel.fetchLevel2sWithStats()
+//                                updateHeaderCounter()
+//                            } else {
+//                                Toast.makeText(this@MainActivity, "نقاطك غير كافية لفتح هذا المستوى!", Toast.LENGTH_SHORT).show()
+//                            }
+//                        }
+//                    }
+//                    .setNegativeButton("إلغاء", null)
+//                    .show()
+//            }
+//        }
+//
+//        binding.rvLevels.apply {
+//            layoutManager = GridLayoutManager(this@MainActivity, 2)
+//            adapter = levelAdapter
+//            setHasFixedSize(true)
+//        }
+//    }
+
+
     private fun setupRecyclerView() {
         levelAdapter = LevelAdapter { selectedLevel ->
             val currentList = levelAdapter.currentList
             val currentIndex = currentList.indexOf(selectedLevel)
 
-            // 1. فحص هل المستوى مفتوح تلقائياً بناءً على إنجاز المستوى السابق أو إن كان المستوى الأول
-            val isLevelUnlocked = if (currentIndex == 0) {
-                true
-            } else {
-                val previousLevel = currentList[currentIndex - 1]
-                previousLevel.completed_logos_count >= 3 || selectedLevel.level.leOpen == 1
-            }
+            // فحص ما إذا كان المستوى مفتوحاً بالطريقة العادية
+            val isLevelUnlocked = selectedLevel.level.leOpen == 1 || currentIndex == 0 ||
+                    (currentIndex > 0 && currentList[currentIndex - 1].completed_logos_count >= 3)
 
             if (isLevelUnlocked || selectedLevel.level.leid == 1) {
-                // فتح شاشة الشعارات عند توفر الشرط
+                // فتح شاشة الشعارات مباشرة
                 val intent = Intent(this, LogosActivity::class.java).apply {
-                    putExtra("LEVEL_ID", selectedLevel.level.leid)
+                    putExtra("LEVEL_ID", selectedLevel.level.leid ?: 1)
                     putExtra("LEVEL_NAME", selectedLevel.level.leCountry ?: "LOGOS")
                 }
                 logosActivityLauncher.launch(intent)
             } else {
-                // 2. 🟢 الفتح اليدوي: إظهار مربع حوار يتيح للمستخدم الشراء/الفتح يدويًا بالنقاط
+                // 🟢 إذا كان المستوى مغلقاً -> نطلب منه الشراء يدوياً
                 val unlockCost = 500
+                val levelId = selectedLevel.level.leid ?: return@LevelAdapter
+
                 AlertDialog.Builder(this)
                     .setTitle("فتح المستوى يدويًا")
-                    .setMessage("هذا المستوى مغلق. هل ترغب في فتحه يدويًا مقابل $unlockCost نقطة؟")
+                    .setMessage("هذا المستوى مغلق. هل ترغب في فتحه مقابل $unlockCost نقطة؟")
                     .setPositiveButton("فتح الآن") { _, _ ->
+
+                        // 🟢 هنا يتم استدعاء الدالة داخل Coroutine Scope
                         lifecycleScope.launch {
-                            val isUnlocked = logoViewModel.unlockLevelManually(selectedLevel.level.leid, unlockCost)
+                            val isUnlocked = logoViewModel.unlockLevelManually(levelId, unlockCost)
+
                             if (isUnlocked) {
                                 Toast.makeText(this@MainActivity, "تم فتح المستوى بنجاح!", Toast.LENGTH_SHORT).show()
-                                // تحديث البيانات والعداد
+
+                                // تحديث القائمة والعداد في أعلى الواجهة فوراً بعد الخصم
                                 levelViewModel.fetchLevel2sWithStats()
                                 updateHeaderCounter()
                             } else {

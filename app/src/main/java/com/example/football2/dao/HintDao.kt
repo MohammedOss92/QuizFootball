@@ -8,6 +8,8 @@ interface HintDao {
 
     @Query("SELECT total_hints FROM hints WHERE _hiid = 1")
     suspend fun getTotalHints(): Int?
+    @Query("UPDATE logos SET lo_points = MAX(0, lo_points - :amount) WHERE _loid = (SELECT _loid FROM logos WHERE lo_completed = 1 AND lo_points >= :amount LIMIT 1)")
+    suspend fun deductScore(amount: Int)
 
     @Query("SELECT used_hints FROM hints WHERE _hiid = 1")
     suspend fun getUsedHints(): Int?
