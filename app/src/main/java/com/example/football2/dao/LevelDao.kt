@@ -11,6 +11,11 @@ interface LevelDao {
     @Query("SELECT COUNT(_leid) FROM levels")
     suspend fun getLevelsCount(): Int
 
+
+
+    @Query("UPDATE levels SET le_open = 1 WHERE _leid = :levelId")
+    suspend fun unlockLevel(levelId: Int?)
+
     @Query("SELECT COUNT(_leid) FROM levels WHERE le_open = 1")
     suspend fun getOpenLevelsCount(): Int
 

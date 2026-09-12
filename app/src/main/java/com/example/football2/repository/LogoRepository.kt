@@ -11,6 +11,9 @@ class LogoRepository(private val logoDao: LogoDao) {
 
     suspend fun getCompletedLogosCount(): Int = logoDao.getCompletedLogosCount()
 
+    suspend fun getCompletedLogosCountByLevel(levelId: Int): Int =
+        logoDao.getCompletedLogosCountByLevel(levelId)
+
     suspend fun getGoldMedalsCount(): Int = logoDao.getGoldMedalsCount()
 
     suspend fun getSilverMedalsCount(): Int = logoDao.getSilverMedalsCount()
@@ -35,13 +38,7 @@ class LogoRepository(private val logoDao: LogoDao) {
         logoDao.insertLogo(logo)
     }
 
-    // 🟢 جلب الشعار/السؤال بالكامل من قاعدة البيانات
-    suspend fun getLogoById(logoId: Int): LogoEntity? {
-        return logoDao.getLogoById(logoId)
-    }
+    suspend fun getLogoById(logoId: Int): LogoEntity? = logoDao.getLogoById(logoId)
 
-    // 🟢 جلب نص السؤال (lo_info) فقط
-    suspend fun getQuestionText(logoId: Int): String? {
-        return logoDao.getLogoInfoById(logoId)
-    }
+    suspend fun getQuestionText(logoId: Int): String? = logoDao.getLogoInfoById(logoId)
 }

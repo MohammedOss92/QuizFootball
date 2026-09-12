@@ -27,4 +27,29 @@ class GameControlRepository(
     suspend fun getTotalLevelsCount(): Int = levelDao.getTotalLevelsCount()
     suspend fun getOpenLevelsCount(): Int = levelDao.getOpenLevelsCount()
     suspend fun getCompletedLevelsCount(): Int = levelDao.getCompletedLevelsCount()
+
+    // 🟢 فتح المستوى يدويًا بشرط خصم/فحص النقاط
+    suspend fun unlockLevelManually(levelId: Int?, cost: Int = 500): Boolean {
+        val totalScore = logoDao.getTotalScore() ?: 0
+        if (totalScore >= cost) {
+            // 1. تغيير حالة المستوى في جدول المستويات إلى مفتوح (1)
+            levelDao.unlockLevel(levelId)
+
+            // 2. تحديث النقاط (خصم تكلفة الفتح)
+            // ملاحظة: يمكنك خصم النقاط عن طريق تعديل نقاط أول شعار أو إضافة خصم مجمل
+            return true
+        }
+        return false
+    }
+
+    suspend fun unlockLevelManually(levelId: Int, cost: Int = 500): Boolean {
+        val totalScore = logoDao.getTotalScore() ?: 0
+        return if (totalScore >= cost) {
+            logoDao.deductPoints(cost)      // 1. خصم النقاط
+            levelDao.unlockLevel(levelId)   // 2. إزالة القفل
+            true
+        } else {
+            false
+        }
+    }
 }

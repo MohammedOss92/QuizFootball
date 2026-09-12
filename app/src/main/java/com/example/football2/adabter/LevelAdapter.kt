@@ -29,35 +29,26 @@ class LevelAdapter(
         fun bind(item: LevelWithStats, position: Int) {
             val context = binding.root.context
 
-            // 1. حساب حالة القفل: المرحلة الأولى مفتوحة تلقائياً أو إذا حقق السابقة >= 5
-            val isUnlocked = if (position == 0) {
-                true
-            } else {
-                val previousItem = currentList[position - 1]
-                previousItem.completed_logos_count >= 3
-            }
+            // 🟢 1. التحقق من حالة القفل: هل المستوى مفتوح في قاعدة البيانات أو شرط المستوى الأول/السابق
+            val isUnlocked = item.level.leOpen == 1 || position == 0 || if (position > 0) {
+                currentList[position - 1].completed_logos_count >= 3
+            } else false
 
-            // 2. عرض اسم الدولة بحروف كبيرة كما في تطبيقك القديم
-            // إذا كان حقل اسم الدولة متوفر في item.level استخدمه، وإلا سنعرض رقم المستوى مؤقتاً
             val countryName = item.level.leCountry ?: "LEVEL ${item.level.leid}"
             binding.tvLevelName.text = countryName.uppercase().trim()
 
-            // 3. التحكم بالظهور والـ Assets حسب حالة الفتح
             if (isUnlocked) {
                 binding.unlockedArea.visibility = View.VISIBLE
                 binding.lock.visibility = View.GONE
                 binding.root.alpha = 1.0f
 
-                // عرض الإحصائيات والأرقام
                 binding.tvLevelScore.text = "Score : ${item.level_score ?: 0}"
                 binding.tvLevelProgress.text = "${item.completed_logos_count} / ${item.logos_count}"
 
-                // تحديث الـ ProgressBar
                 binding.logosProgress.max = item.logos_count
                 binding.logosProgress.progress = item.completed_logos_count
 
-                // تحميل علم الدولة من مجلد assets/levels/
-                val flagImageName = item.level.leFlag // القيمة مثل "spain.png"
+                val flagImageName = item.level.leFlag
                 val assetPath = "file:///android_asset/levels/$flagImageName"
 
                 Glide.with(context)
@@ -65,15 +56,14 @@ class LevelAdapter(
                     .into(binding.ivLevelIcon)
 
             } else {
-                // المرحلة مغلقة: إخفاء الإحصائيات وعرض القفل
                 binding.unlockedArea.visibility = View.GONE
                 binding.lock.visibility = View.VISIBLE
-                binding.root.alpha = 0.6f // تعتيم بسيط لتمييزها كمرحلة مغلقة
+                binding.root.alpha = 0.6f
 
                 binding.ivLevelIcon.setImageDrawable(null)
             }
 
-            // 4. معالجة الضغط
+            // 🟢 2. عند الضغط إرسال العنصر المباشر
             binding.root.setOnClickListener {
                 onLevelClick(item)
             }

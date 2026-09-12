@@ -6,14 +6,17 @@ import com.example.football2.entity.LogoEntity
 @Dao
 interface LogoDao {
 
-    @Query("SELECT SUM(lo_points) FROM logos")
+    @Query("SELECT SUM(lo_points) FROM logos WHERE lo_completed = 1 OR lo_completed = '1'")
     suspend fun getTotalScore(): Int?
 
     @Query("SELECT COUNT(_loid) FROM logos")
     suspend fun getTotalLogosCount(): Int
 
-    @Query("SELECT COUNT(_loid) FROM logos WHERE lo_completed = 1")
+    @Query("SELECT COUNT(_loid) FROM logos WHERE lo_completed = 1 OR lo_completed = '1'")
     suspend fun getCompletedLogosCount(): Int
+
+    @Query("SELECT COUNT(_loid) FROM logos WHERE lo_level = :levelId AND (lo_completed = 1 OR lo_completed = '1')")
+    suspend fun getCompletedLogosCountByLevel(levelId: Int): Int
 
     @Query("SELECT COUNT(_loid) FROM logos WHERE lo_points = 100")
     suspend fun getGoldMedalsCount(): Int
@@ -36,7 +39,7 @@ interface LogoDao {
     @Query("SELECT COUNT(_loid) FROM logos WHERE lo_level = :levelId")
     suspend fun getLogosCountByLevel(levelId: Int): Int
 
-    @Query("SELECT COUNT(_loid) FROM logos WHERE lo_level = :levelId AND lo_completed = 0")
+    @Query("SELECT COUNT(_loid) FROM logos WHERE lo_level = :levelId AND (lo_completed = 0 OR lo_completed = '0')")
     suspend fun getUnsolvedLogosCount(levelId: Int): Int
 
     @Query("SELECT * FROM logos WHERE lo_level = :levelId ORDER BY lo_order ASC")
@@ -60,11 +63,12 @@ interface LogoDao {
     @Query("UPDATE logo_hints SET lo_hi_hide = 1 WHERE lo_hi_logo = :logoId")
     suspend fun updateHideHint(logoId: Int)
 
-
     @Query("SELECT * FROM logos WHERE _loid = :logoId LIMIT 1")
     suspend fun getLogoById(logoId: Int): LogoEntity?
 
-    // 🟢 استعلام اختياري لجلب lo_info فقط مباشرة
     @Query("SELECT lo_info FROM logos WHERE _loid = :logoId LIMIT 1")
     suspend fun getLogoInfoById(logoId: Int): String?
+
+    @Query("UPDATE logos SET lo_points = MAX(0, lo_points - :points) WHERE _loid = (SELECT _loid FROM logos WHERE lo_completed = 1 OR lo_completed = '1' LIMIT 1)")
+    suspend fun deductPoints(points: Int)
 }

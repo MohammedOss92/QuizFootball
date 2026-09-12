@@ -7,8 +7,10 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
@@ -37,7 +39,7 @@ class MainActivity : AppCompatActivity() {
     private val logosActivityLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) {
-        // 🟢 يعمل هذا الكود فوراً وبمجرد إغلاق شاشة اللعب والعودة للواجهة!
+        // يعمل هذا الكود فوراً وبمجرد إغلاق شاشة اللعب والعودة للواجهة!
         levelViewModel.fetchLevel2sWithStats()
     }
 
@@ -79,7 +81,7 @@ class MainActivity : AppCompatActivity() {
         logoViewModel = ViewModelProvider(this, factory)[LogoViewModel::class.java]
 
         setupToolbar()
-        // 1. إعداد الـ RecyclerView
+        // 1. إعداد الـ RecyclerView مع معالجة الفتح اليدوي
         setupRecyclerView()
 
         // 2. تفعيل المراقبة الحية للبيانات
@@ -95,7 +97,6 @@ class MainActivity : AppCompatActivity() {
         // ضبط زر الرجوع
         val btnBack = binding.titleBar1.findViewById<View>(R.id.btnBack)
             ?: binding.titleBar1.findViewById<View>(R.id.back1)
-            ?: binding.titleBar1.findViewById<View>(R.id.back1)
         btnBack?.setOnClickListener {
             finish()
         }
@@ -109,14 +110,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun observeViewModel() {
-
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 levelViewModel.levelsWithStats.collect { list ->
                     if (list.isNotEmpty()) {
-                        // 1. إرسال نسخة جديدة كلياً من القائمة
                         levelAdapter.submitList(list.toList()) {
-                            // 2. 🟢 هذا هو السطر المنقذ: يُجبر الـ RecyclerView على إعادة رسم الواجهة فوراً
                             levelAdapter.notifyDataSetChanged()
                         }
                     }
@@ -127,7 +125,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateHeaderCounter() {
         lifecycleScope.launch {
-            // جلب المجموع الكلي للـ Score للشعارات المحلولة من الـ Repository
             val totalScore = logoViewModel.getTotalScore()
 
             val tvCounterValue = binding.titleBar1.findViewById<TextView>(R.id.tvCounterValue)
@@ -135,7 +132,21 @@ class MainActivity : AppCompatActivity() {
             val tvCounterLabel = binding.titleBar1.findViewById<TextView>(R.id.tvCounterLabel)
                 ?: binding.titleBar1.findViewById<TextView>(R.id.scoreTitle)
 
-//            tvCounterValue?.text = String.format("%03d", totalScore)
+            tvCounterValue?.text = String.format(java.util.Locale.ENGLISH, "%03d", totalScore)
+            tvCounterValue?.setTextColor(Color.parseColor("#FF4D4D"))
+
+            tvCounterLabel?.text = "SCORE"
+            tvCounterLabel?.setTextColor(Color.parseColor("#FF4D4D"))
+        }
+
+        lifecycleScope.launch {
+            val totalScore = logoViewModel.getTotalScore()
+
+            val tvCounterValue = binding.titleBar1.findViewById<TextView>(R.id.tvCounterValue)
+                ?: binding.titleBar1.findViewById<TextView>(R.id.scoreValue)
+            val tvCounterLabel = binding.titleBar1.findViewById<TextView>(R.id.tvCounterLabel)
+                ?: binding.titleBar1.findViewById<TextView>(R.id.scoreTitle)
+
             tvCounterValue?.text = String.format(java.util.Locale.ENGLISH, "%03d", totalScore)
             tvCounterValue?.setTextColor(Color.parseColor("#FF4D4D"))
 
@@ -144,68 +155,46 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
-    private fun setupRecycle1rView() {
-        levelAdapter = LevelAdapter { selectedLevel ->
-            val currentList = levelAdapter.currentList
-            val currentIndex = currentList.indexOf(selectedLevel)
-
-            // فحص فتح المستوى بناءً على المستوى السابق
-            val isLevelUnlocked = if (currentIndex == 0) {
-                true
-            } else {
-                val previousLevel = currentList[currentIndex - 1]
-                previousLevel.completed_logos_count >= 3
-            }
-
-            if (isLevelUnlocked || selectedLevel.level.leid == 1) {
-                val intent = Intent(this, LogosActivity::class.java).apply {
-                    putExtra("LEVEL_ID", selectedLevel.level.leid)
-                    putExtra("LEVEL_NAME", currentLevelName)
-                }
-                startActivity(intent)
-            } else {
-                androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setMessage("لفتح هذا المستوى، يجب حل 3 شعارات صحيحة في المستوى السابق أولاً!")
-                    .setPositiveButton("حسناً", null)
-                    .show()
-            }
-        }
-
-        binding.rvLevels.apply {
-            layoutManager = GridLayoutManager(this@MainActivity, 2)
-            adapter = levelAdapter
-            setHasFixedSize(true)
-        }
-    }
-
     private fun setupRecyclerView() {
         levelAdapter = LevelAdapter { selectedLevel ->
             val currentList = levelAdapter.currentList
             val currentIndex = currentList.indexOf(selectedLevel)
 
-            // فحص فتح المستوى بناءً على المستوى السابق
+            // 1. فحص هل المستوى مفتوح تلقائياً بناءً على إنجاز المستوى السابق أو إن كان المستوى الأول
             val isLevelUnlocked = if (currentIndex == 0) {
                 true
             } else {
                 val previousLevel = currentList[currentIndex - 1]
-                previousLevel.completed_logos_count >= 3
+                previousLevel.completed_logos_count >= 3 || selectedLevel.level.leOpen == 1
             }
 
             if (isLevelUnlocked || selectedLevel.level.leid == 1) {
+                // فتح شاشة الشعارات عند توفر الشرط
                 val intent = Intent(this, LogosActivity::class.java).apply {
                     putExtra("LEVEL_ID", selectedLevel.level.leid)
-
-                    // 🟢 التعديل الأساسي: جلب اسم المستوى مباشرة من العنصر المختار
-                    // (تأكد هل الحقل اسمه lename أو lname أو name حسب حقول الـ Entity لديك)
                     putExtra("LEVEL_NAME", selectedLevel.level.leCountry ?: "LOGOS")
                 }
-                // 🟢 التعديل الثاني: استخدام الـ Launcher
                 logosActivityLauncher.launch(intent)
             } else {
-                androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setMessage("لفتح هذا المستوى، يجب حل 3 شعارات صحيحة في المستوى السابق أولاً!")
-                    .setPositiveButton("حسناً", null)
+                // 2. 🟢 الفتح اليدوي: إظهار مربع حوار يتيح للمستخدم الشراء/الفتح يدويًا بالنقاط
+                val unlockCost = 500
+                AlertDialog.Builder(this)
+                    .setTitle("فتح المستوى يدويًا")
+                    .setMessage("هذا المستوى مغلق. هل ترغب في فتحه يدويًا مقابل $unlockCost نقطة؟")
+                    .setPositiveButton("فتح الآن") { _, _ ->
+                        lifecycleScope.launch {
+                            val isUnlocked = logoViewModel.unlockLevelManually(selectedLevel.level.leid, unlockCost)
+                            if (isUnlocked) {
+                                Toast.makeText(this@MainActivity, "تم فتح المستوى بنجاح!", Toast.LENGTH_SHORT).show()
+                                // تحديث البيانات والعداد
+                                levelViewModel.fetchLevel2sWithStats()
+                                updateHeaderCounter()
+                            } else {
+                                Toast.makeText(this@MainActivity, "نقاطك غير كافية لفتح هذا المستوى!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                    .setNegativeButton("إلغاء", null)
                     .show()
             }
         }
@@ -228,8 +217,4 @@ class MainActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
-
-
-
 }
-

@@ -82,4 +82,16 @@ class LogoViewModel(private val logoRepository: LogoRepository, private val hint
     suspend fun getTotalLevelsCount(): Int = gameControlRepository.getTotalLevelsCount()
     suspend fun getOpenLevelsCount(): Int = gameControlRepository.getOpenLevelsCount()
     suspend fun getCompletedLevelsCount(): Int = gameControlRepository.getCompletedLevelsCount()
+
+    // 🟢 استدعاء الفتح اليدوي للمستوى
+
+
+    suspend fun unlockLevelManually(levelId: Int?, cost: Int = 500): Boolean {
+        val success = gameControlRepository.unlockLevelManually(levelId, cost)
+        if (success) {
+            // 🟢 تحديث مباشر لنتيجة getTotalScore إذا كنت تستخدم StateFlow أو LiveData
+            getTotalScore()
+        }
+        return success
+    }
 }
