@@ -1,6 +1,8 @@
 package com.example.football2
 
+import android.graphics.Color
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -20,6 +22,8 @@ import kotlinx.coroutines.launch
 
 class StaticsActivity : AppCompatActivity() {
     private lateinit var logoViewModel: LogoViewModel
+    private var currentDisplayedScore = 0
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,11 +51,60 @@ class StaticsActivity : AppCompatActivity() {
 
         logoViewModel = ViewModelProvider(this, factory)[LogoViewModel::class.java]
 
-        val btnBack = findViewById<Button>(R.id.btnBack)
-        btnBack.setOnClickListener { finish() }
+
 
         observeStatistics()
+        setupToolbar()
+        updateHeaderCounter()
 
+    }
+
+
+    private fun updateHeaderCounter() {
+        lifecycleScope.launch {
+            val totalScore = logoViewModel.getTotalScore()
+
+            // 1. العثور على الـ Toolbar المضمن
+            val toolbarView = findViewById<View>(R.id.toolbar)
+
+            // 2. الوصول لـ TextView الخاص بـ SCORE والمعرّفات الصحيحة من toolbar_common
+            val tvCounterValue = toolbarView?.findViewById<TextView>(R.id.scoreValue)
+                ?: findViewById(R.id.scoreValue)
+            val tvCounterLabel = toolbarView?.findViewById<TextView>(R.id.tvToolbarTitle)
+                ?: findViewById(R.id.tvToolbarTitle)
+
+            // 3. تحديث النص والألوان
+            tvCounterLabel?.text = "SCORE"
+            tvCounterLabel?.setTextColor(Color.parseColor("#FF4D4D"))
+
+            if (tvCounterValue != null) {
+                tvCounterValue.setTextColor(Color.parseColor("#FF4D4D"))
+
+                // 4. تطبيق الأنيمايشن مع تحديث القيمة
+                animateScoreCounter(
+                    textView = tvCounterValue,
+                    fromValue = currentDisplayedScore,
+                    toValue = totalScore
+                )
+                currentDisplayedScore = totalScore
+            }
+        }
+    }
+    private fun setupToolbar() {
+        // 1. الوصول لـ XML التولبار المُضمن أولاً أو البحث مباشرة في الشاشة
+        val toolbarView = findViewById<View>(R.id.toolbar)
+
+        // 2. ضبط العنوان
+        val tvTitle = toolbarView?.findViewById<TextView>(R.id.title)
+            ?: findViewById(R.id.title)
+        tvTitle?.text = "STATISTICS" // أو "LEVELS" حسب الحاجة
+
+        // 3. ضبط زر الرجوع
+        val btnBack = toolbarView?.findViewById<View>(R.id.back1)
+            ?: findViewById(R.id.back1)
+        btnBack?.setOnClickListener {
+            finish()
+        }
     }
         private fun observeStatistics() {
             lifecycleScope.launch {
@@ -98,4 +151,20 @@ class StaticsActivity : AppCompatActivity() {
             tvValue?.text = value
             tvTitle?.text = title
         }
+
+    private fun animateScoreCounter(textView: TextView, fromValue: Int, toValue: Int) {
+        if (fromValue == toValue) {
+            textView.text = String.format(java.util.Locale.ENGLISH, "%03d", toValue)
+            return
+        }
+
+        val animator = android.animation.ValueAnimator.ofInt(fromValue, toValue).apply {
+            duration = 800 // مدة الحركة بالملي ثانية (0.8 ثانية)
+            addUpdateListener { animation ->
+                val animatedValue = animation.animatedValue as Int
+                textView.text = String.format(java.util.Locale.ENGLISH, "%03d", animatedValue)
+            }
+        }
+        animator.start()
+    }
     }

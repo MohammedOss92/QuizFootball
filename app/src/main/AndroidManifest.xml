@@ -54,10 +54,14 @@
         <activity
             android:name=".StaticsActivity"
             android:exported="false"
+            android:theme="@style/Base.Theme.Football2"
+
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".SettingsActivity"
             android:exported="false"
+            android:theme="@style/Base.Theme.Football2"
+
             android:windowSoftInputMode="adjustResize" />
     </application>
 

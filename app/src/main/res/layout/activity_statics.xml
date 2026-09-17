@@ -1,43 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/field"
-    android:orientation="vertical">
+    android:fitsSystemWindows="true">
 
-    <!-- شريط العلوى (Header) يحتوي على زر Back وعنوان STATISTICS -->
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="#99000000"
-        android:paddingHorizontal="16dp">
+    <!-- الـ Toolbar مع القيود العلوية -->
+    <include
+        android:id="@+id/toolbar"
+        layout="@layout/toolbar_common"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <Button
-            android:id="@+id/btnBack"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:layout_centerVertical="true"
-            android:background="@drawable/back"
-            android:text="Back"
-            android:textColor="@android:color/white"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:text="STATISTICS"
-            android:textColor="@android:color/white"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-    </RelativeLayout>
-
-    <!-- محتوى الإحصائيات (قابل للتمرير Scrollable) -->
+    <!-- محتوى الإحصائيات مع القيود الصحيحة والارتفاع 0dp -->
     <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="16dp">
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/toolbar">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -64,10 +51,21 @@
                 android:orientation="vertical"
                 android:padding="8dp">
 
-                <include layout="@layout/item_stat_row" android:id="@+id/rowTotalScore" />
-                <include layout="@layout/item_stat_row" android:id="@+id/rowTotalHints" />
-                <include layout="@layout/item_stat_row" android:id="@+id/rowUsedHints" />
-                <include layout="@layout/item_stat_row" android:id="@+id/rowCurrentHints" />
+                <include
+                    android:id="@+id/rowTotalScore"
+                    layout="@layout/item_stat_row" />
+
+                <include
+                    android:id="@+id/rowTotalHints"
+                    layout="@layout/item_stat_row" />
+
+                <include
+                    android:id="@+id/rowUsedHints"
+                    layout="@layout/item_stat_row" />
+
+                <include
+                    android:id="@+id/rowCurrentHints"
+                    layout="@layout/item_stat_row" />
             </LinearLayout>
 
             <!-- القسم الثاني: Logos & Medals -->
@@ -90,11 +88,25 @@
                 android:orientation="vertical"
                 android:padding="8dp">
 
-                <include layout="@layout/item_stat_row" android:id="@+id/rowTotalLogos" />
-                <include layout="@layout/item_stat_row" android:id="@+id/rowCompletedLogos" />
-                <include layout="@layout/item_stat_row" android:id="@+id/rowGoldMedals" />
-                <include layout="@layout/item_stat_row" android:id="@+id/rowSilverMedals" />
-                <include layout="@layout/item_stat_row" android:id="@+id/rowBronzeMedals" />
+                <include
+                    android:id="@+id/rowTotalLogos"
+                    layout="@layout/item_stat_row" />
+
+                <include
+                    android:id="@+id/rowCompletedLogos"
+                    layout="@layout/item_stat_row" />
+
+                <include
+                    android:id="@+id/rowGoldMedals"
+                    layout="@layout/item_stat_row" />
+
+                <include
+                    android:id="@+id/rowSilverMedals"
+                    layout="@layout/item_stat_row" />
+
+                <include
+                    android:id="@+id/rowBronzeMedals"
+                    layout="@layout/item_stat_row" />
             </LinearLayout>
 
             <!-- القسم الثالث: Levels -->
@@ -116,12 +128,20 @@
                 android:orientation="vertical"
                 android:padding="8dp">
 
-                <include layout="@layout/item_stat_row" android:id="@+id/rowTotalLevels" />
-                <include layout="@layout/item_stat_row" android:id="@+id/rowOpenLevels" />
-                <include layout="@layout/item_stat_row" android:id="@+id/rowCompletedLevels" />
+                <include
+                    android:id="@+id/rowTotalLevels"
+                    layout="@layout/item_stat_row" />
+
+                <include
+                    android:id="@+id/rowOpenLevels"
+                    layout="@layout/item_stat_row" />
+
+                <include
+                    android:id="@+id/rowCompletedLevels"
+                    layout="@layout/item_stat_row" />
             </LinearLayout>
 
         </LinearLayout>
     </ScrollView>
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
