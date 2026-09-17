@@ -27,6 +27,9 @@ class LogosActivity : AppCompatActivity() {
     private var currentLevelId: Int = 1
     private var currentLevelName: String = "LOGOS"
 
+    private var currentDisplayedScore: Int = 0
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLogosBinding.inflate(layoutInflater)
@@ -90,7 +93,33 @@ class LogosActivity : AppCompatActivity() {
 
             tvCounterLabel?.text = "SCORE"
             tvCounterLabel?.setTextColor(Color.parseColor("#FF4D4D"))
+
+            if (tvCounterValue != null) {
+                animateScoreCounter(
+                    textView = tvCounterValue,
+                    fromValue = currentDisplayedScore,
+                    toValue = totalScore
+                )
+                // تحديث القيمة الحالية لتكون المرجع للمرة القادمة
+                currentDisplayedScore = totalScore
+            }
         }
+    }
+
+    private fun animateScoreCounter(textView: TextView, fromValue: Int, toValue: Int) {
+        if (fromValue == toValue) {
+            textView.text = String.format(java.util.Locale.ENGLISH, "%03d", toValue)
+            return
+        }
+
+        val animator = android.animation.ValueAnimator.ofInt(fromValue, toValue).apply {
+            duration = 800 // مدة الحركة بالملي ثانية (0.8 ثانية)
+            addUpdateListener { animation ->
+                val animatedValue = animation.animatedValue as Int
+                textView.text = String.format(java.util.Locale.ENGLISH, "%03d", animatedValue)
+            }
+        }
+        animator.start()
     }
 
     private fun setupRecyclerView() {

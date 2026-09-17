@@ -36,6 +36,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var logoViewModel: LogoViewModel
     private var currentLevelName: String = ""
 
+    private var currentDisplayedScore: Int = 0
+
     private val logosActivityLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) {
@@ -124,20 +126,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateHeaderCounter() {
-        lifecycleScope.launch {
-            val totalScore = logoViewModel.getTotalScore()
 
-            val tvCounterValue = binding.titleBar1.findViewById<TextView>(R.id.tvCounterValue)
-                ?: binding.titleBar1.findViewById<TextView>(R.id.scoreValue)
-            val tvCounterLabel = binding.titleBar1.findViewById<TextView>(R.id.tvCounterLabel)
-                ?: binding.titleBar1.findViewById<TextView>(R.id.scoreTitle)
-
-            tvCounterValue?.text = String.format(java.util.Locale.ENGLISH, "%03d", totalScore)
-            tvCounterValue?.setTextColor(Color.parseColor("#FF4D4D"))
-
-            tvCounterLabel?.text = "SCORE"
-            tvCounterLabel?.setTextColor(Color.parseColor("#FF4D4D"))
-        }
 
         lifecycleScope.launch {
             val totalScore = logoViewModel.getTotalScore()
@@ -152,59 +141,36 @@ class MainActivity : AppCompatActivity() {
 
             tvCounterLabel?.text = "SCORE"
             tvCounterLabel?.setTextColor(Color.parseColor("#FF4D4D"))
+
+            // 🟢 تطبيق الحركة للعداد
+            if (tvCounterValue != null) {
+                animateScoreCounter(
+                    textView = tvCounterValue,
+                    fromValue = currentDisplayedScore,
+                    toValue = totalScore
+                )
+                // تحديث القيمة الحالية لتكون المرجع للمرة القادمة
+                currentDisplayedScore = totalScore
+            }
         }
     }
 
-//    private fun setupRecyclerView() {
-//        levelAdapter = LevelAdapter { selectedLevel ->
-//            val currentList = levelAdapter.currentList
-//            val currentIndex = currentList.indexOf(selectedLevel)
-//
-//            // 1. فحص هل المستوى مفتوح تلقائياً بناءً على إنجاز المستوى السابق أو إن كان المستوى الأول
-//            val isLevelUnlocked = if (currentIndex == 0) {
-//                true
-//            } else {
-//                val previousLevel = currentList[currentIndex - 1]
-//                previousLevel.completed_logos_count >= 3 || selectedLevel.level.leOpen == 1
-//            }
-//
-//            if (isLevelUnlocked || selectedLevel.level.leid == 1) {
-//                // فتح شاشة الشعارات عند توفر الشرط
-//                val intent = Intent(this, LogosActivity::class.java).apply {
-//                    putExtra("LEVEL_ID", selectedLevel.level.leid)
-//                    putExtra("LEVEL_NAME", selectedLevel.level.leCountry ?: "LOGOS")
-//                }
-//                logosActivityLauncher.launch(intent)
-//            } else {
-//                // 2. 🟢 الفتح اليدوي: إظهار مربع حوار يتيح للمستخدم الشراء/الفتح يدويًا بالنقاط
-//                val unlockCost = 500
-//                AlertDialog.Builder(this)
-//                    .setTitle("فتح المستوى يدويًا")
-//                    .setMessage("هذا المستوى مغلق. هل ترغب في فتحه يدويًا مقابل $unlockCost نقطة؟")
-//                    .setPositiveButton("فتح الآن") { _, _ ->
-//                        lifecycleScope.launch {
-//                            val isUnlocked = logoViewModel.unlockLevelManually(selectedLevel.level.leid, unlockCost)
-//                            if (isUnlocked) {
-//                                Toast.makeText(this@MainActivity, "تم فتح المستوى بنجاح!", Toast.LENGTH_SHORT).show()
-//                                // تحديث البيانات والعداد
-//                                levelViewModel.fetchLevel2sWithStats()
-//                                updateHeaderCounter()
-//                            } else {
-//                                Toast.makeText(this@MainActivity, "نقاطك غير كافية لفتح هذا المستوى!", Toast.LENGTH_SHORT).show()
-//                            }
-//                        }
-//                    }
-//                    .setNegativeButton("إلغاء", null)
-//                    .show()
-//            }
-//        }
-//
-//        binding.rvLevels.apply {
-//            layoutManager = GridLayoutManager(this@MainActivity, 2)
-//            adapter = levelAdapter
-//            setHasFixedSize(true)
-//        }
-//    }
+    private fun animateScoreCounter(textView: TextView, fromValue: Int, toValue: Int) {
+        if (fromValue == toValue) {
+            textView.text = String.format(java.util.Locale.ENGLISH, "%03d", toValue)
+            return
+        }
+
+        val animator = android.animation.ValueAnimator.ofInt(fromValue, toValue).apply {
+            duration = 800 // مدة الحركة بالملي ثانية (0.8 ثانية)
+            addUpdateListener { animation ->
+                val animatedValue = animation.animatedValue as Int
+                textView.text = String.format(java.util.Locale.ENGLISH, "%03d", animatedValue)
+            }
+        }
+        animator.start()
+    }
+
 
 
     private fun setupRecyclerView() {

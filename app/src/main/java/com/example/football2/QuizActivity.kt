@@ -404,19 +404,26 @@ class QuizActivity : AppCompatActivity() {
         binding.nextLogoButton.setOnClickListener { navigateToNextLogo() }
         binding.prevLogoButton.setOnClickListener { navigateToPrevLogo() }
 
-        // 🟢 الزر الأول: ينشط isSelectingSlotForLetterHint
+
+
         binding.letter.setOnClickListener {
             playSound(R.raw.kick)
+
+            // 1. التحقق أولاً من وجود نقاط كافية قبل إظهار النافذة
+            if (hintViewModel.currentHints.value <= 0) {
+                Toast.makeText(this, "لا توجد نقاط كافية!", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             val builder = AlertDialog.Builder(this)
             builder.setTitle("Hints")
             builder.setMessage("Show one letter!\nCost : 1 hint")
 
             builder.setPositiveButton("OK") { dialog, _ ->
-                handleHintUsage {
-                    isSelectingSlotForLetter2Hint = false
-                    isSelectingSlotForLetterHint = true
-                    showQuestionMarksForHint()
-                }
+                // 2. إظهار علامات الاستفهام فقط بدون تنفيذ الخصم هنا
+                isSelectingSlotForLetter2Hint = false
+                isSelectingSlotForLetterHint = true
+                showQuestionMarksForHint()
                 dialog.dismiss()
             }
 
@@ -435,11 +442,11 @@ class QuizActivity : AppCompatActivity() {
             builder.setMessage("Show one letter!\nCost : 1 hint")
 
             builder.setPositiveButton("OK") { dialog, _ ->
-                handleHintUsage {
+
                     isSelectingSlotForLetterHint = false
                     isSelectingSlotForLetter2Hint = true
                     showQuestionMarksForHint()
-                }
+
                 dialog.dismiss()
             }
             builder.setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
@@ -549,7 +556,7 @@ class QuizActivity : AppCompatActivity() {
     }
 
     // 🟢 تنفيذ كشف حرف للزر الأول مع الحفظ في الـ ViewModel
-    private fun revealLetterAtSlot(slotIndex: Int) {
+    private fun revealLetterAtSlot1(slotIndex: Int) {
         if (!isSelectingSlotForLetterHint) return
 
         val correctAnswer = currentLogo?.lo_name ?: return
@@ -578,7 +585,7 @@ class QuizActivity : AppCompatActivity() {
     }
 
     // 🟢 تنفيذ كشف حرف مخصص للزر الثاني بدون حفظ الحرف كـ Letter Mask دائم
-    private fun revealLetterAtSlot2(slotIndex: Int) {
+    private fun revealLetterAtSlot12(slotIndex: Int) {
         if (!isSelectingSlotForLetter2Hint) return
 
         val correctAnswer = currentLogo?.lo_name ?: return
@@ -605,6 +612,74 @@ class QuizActivity : AppCompatActivity() {
 
         updateLetter2ButtonState()
         checkAnswerComplete()
+    }
+
+    // 🟢 تنفيذ كشف حرف للزر الأول مع الحفظ في الـ ViewModel والخصم بأنيميشن
+    // 🟢 تنفيذ كشف حرف للزر الأول بدون خصم إضافي
+    // 🟢 تنفيذ كشف حرف للزر الأول مع الخصم فور ظهور الحرف
+    private fun revealLetterAtSlot(slotIndex: Int) {
+        if (!isSelectingSlotForLetterHint) return
+
+        val correctAnswer = currentLogo?.lo_name ?: return
+        val selectedSlot = answerSlots.getOrNull(slotIndex) ?: return
+
+        if (selectedSlot.text.toString().trim() != "?") return
+        if (correctAnswer.getOrNull(slotIndex) == ' ') return
+
+        val correctChar = correctAnswer[slotIndex].uppercaseChar()
+
+        clearQuestionMarks()
+        isSelectingSlotForLetterHint = false
+
+        // 1. إظهار الحرف في الـ Slot وتلوينه
+        selectedSlot.text = correctChar.toString()
+        selectedSlot.setTextColor(Color.YELLOW)
+
+        // 2. خصم التلميح وتشغيل الأنيميشن فور ظهور الحرف
+        handleHintUsage {
+            val gridPosition = findAvailablePositionOfLetter(correctChar)
+            if (gridPosition != null) {
+                slotSourcePositions[slotIndex] = gridPosition
+                lettersAdapter.hideLetter(gridPosition)
+            }
+
+            logoHintViewModel.unlockLetterHintAt(currentLogoId, slotIndex)
+            updateLetterButtonState(true)
+            checkAnswerComplete()
+        }
+    }
+
+    // 🟢 تنفيذ كشف حرف مخصص للزر الثاني مع الخصم فور ظهور الحرف
+    private fun revealLetterAtSlot2(slotIndex: Int) {
+        if (!isSelectingSlotForLetter2Hint) return
+
+        val correctAnswer = currentLogo?.lo_name ?: return
+        val selectedSlot = answerSlots.getOrNull(slotIndex) ?: return
+
+        if (selectedSlot.text.toString().trim() != "?") return
+        if (correctAnswer.getOrNull(slotIndex) == ' ') return
+
+        val correctChar = correctAnswer[slotIndex].uppercaseChar()
+
+        clearQuestionMarks()
+        isSelectingSlotForLetter2Hint = false
+
+        // 1. إظهار الحرف في الـ Slot وتلوينه
+        selectedSlot.text = correctChar.toString()
+        selectedSlot.setTextColor(Color.YELLOW)
+
+        // 2. خصم التلميح وتشغيل الأنيميشن فور ظهور الحرف
+        handleHintUsage {
+            val gridPosition = findAvailablePositionOfLetter(correctChar)
+            if (gridPosition != null) {
+                slotSourcePositions[slotIndex] = gridPosition
+                lettersAdapter.hideLetter(gridPosition)
+            }
+            logoHintViewModel.unlockLetterHintAt(currentLogoId, slotIndex)
+
+            updateLetter2ButtonState()
+            checkAnswerComplete()
+        }
     }
 
     private fun findAvailablePositionOfLetter(targetChar: Char): Int? {
