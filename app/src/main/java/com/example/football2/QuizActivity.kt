@@ -116,13 +116,13 @@ class QuizActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 hintViewModel.currentHints.collect { hintsCount ->
                     if (previousHintsCount == -1) {
-                        // المرة الأولى عند فتح الشاشة
                         previousHintsCount = hintsCount
                         binding.titleBar.findViewById<TextView>(R.id.scoreValue).text = String.format(java.util.Locale.ENGLISH, "%d", hintsCount)
                     } else if (previousHintsCount != hintsCount) {
-                        // تشغيل العداد التدريجي
+                        // التعديل هنا: نمرر scoreValue و scoreAnimText معاً
                         animateScoreCounter(
-                            textView = binding.titleBar.findViewById(R.id.scoreValue),
+                            textView = binding.titleBar.findViewById<TextView>(R.id.scoreValue),
+                            animTextView = binding.titleBar.findViewById<TextView>(R.id.scoreAnimText),
                             fromValue = previousHintsCount,
                             toValue = hintsCount
                         )
@@ -131,7 +131,6 @@ class QuizActivity : AppCompatActivity() {
                 }
             }
         }
-
 //        lifecycleScope.launch {
 //            logoViewModel.logos.collect { logosList ->
 //                currentLogo = logosList.find { it._loid == currentLogoId }
@@ -204,34 +203,34 @@ class QuizActivity : AppCompatActivity() {
     }
 
 
-    private fun animateScoreCounter(textView: TextView, fromValue: Int, toValue: Int) {
-        // 1. إذا كانت القيمة القديمة تساوي الجديدة، اعرض الرقم مباشرة بدقة بدون أصفار
+    private fun animateScoreCounter(textView: TextView, animTextView: TextView, fromValue: Int, toValue: Int) {
         if (fromValue == toValue) {
             textView.text = String.format(java.util.Locale.ENGLISH, "%d", toValue)
             return
         }
 
-        // 2. إلغاء أي أنيميشن قائم حالياً لمنع التداخل عند الضغط السريع
         currentAnimator?.cancel()
 
-        // 3. تحديد ألوان الحركة
-        val isIncreasing = toValue > fromValue
+        val diff = toValue - fromValue
+        val isIncreasing = diff > 0
         val activeColor = if (isIncreasing) Color.GREEN else Color.RED
-        val originalColor = Color.parseColor("#f35054") // لون النص الأصلي الثابت
+        val originalColor = Color.parseColor("#f35054")
 
-        // 4. إعداد العداد التدريجي بدون أصفار إضافية (%d)
+        // 1. إظهار وتفعيل حركة النص الجانبي (+X أو -X)
+        showFloatingDelta(animTextView, diff, activeColor)
+
+        // 2. تشغيل عداد الأرقام تدريجياً
         currentAnimator = android.animation.ValueAnimator.ofInt(fromValue, toValue).apply {
-            duration = 1000L // مدة العد الكاملة (ثانية واحدة)
+            duration = 1000L
             interpolator = android.view.animation.LinearInterpolator()
 
             addUpdateListener { animation ->
                 val animatedValue = animation.animatedValue as Int
-                // تحديث الرقم تدريجياً بنفس تنسيق %d
                 textView.text = String.format(java.util.Locale.ENGLISH, "%d", animatedValue)
             }
         }
 
-        // 5. حركة التكبير وتغيير اللون أثناء العد
+        // 3. تأثير تكبير وتصغير العداد الرئيسي
         textView.setTextColor(activeColor)
         textView.animate()
             .scaleX(1.2f)
@@ -251,6 +250,77 @@ class QuizActivity : AppCompatActivity() {
 
         currentAnimator?.start()
     }
+
+    // دالة إظهار وتطيير النص (+1 / -1)
+    private fun showFloatingDelta(animTextView: TextView, diff: Int, color: Int) {
+        val symbol = if (diff > 0) "+$diff" else "$diff"
+        animTextView.text = symbol
+        animTextView.setTextColor(color)
+
+        // إعادة ضبط موقع وشفافية العنصر
+        animTextView.visibility = android.view.View.VISIBLE
+        animTextView.alpha = 1.0f
+        animTextView.translationY = 0f
+
+        // حركة الصعود والأفول (Fly up and fade out)
+        animTextView.animate()
+            .translationY(-30f) // التحرك للأعلى بمقدار 30 بكسل
+            .alpha(0.0f)        // اختفاء تدريجي
+            .setDuration(900)
+            .withEndAction {
+                animTextView.visibility = android.view.View.INVISIBLE
+                animTextView.translationY = 0f
+            }
+            .start()
+    }
+
+//    private fun animateScoreCounter(textView: TextView, fromValue: Int, toValue: Int) {
+//        // 1. إذا كانت القيمة القديمة تساوي الجديدة، اعرض الرقم مباشرة بدقة بدون أصفار
+//        if (fromValue == toValue) {
+//            textView.text = String.format(java.util.Locale.ENGLISH, "%d", toValue)
+//            return
+//        }
+//
+//        // 2. إلغاء أي أنيميشن قائم حالياً لمنع التداخل عند الضغط السريع
+//        currentAnimator?.cancel()
+//
+//        // 3. تحديد ألوان الحركة
+//        val isIncreasing = toValue > fromValue
+//        val activeColor = if (isIncreasing) Color.GREEN else Color.RED
+//        val originalColor = Color.parseColor("#f35054") // لون النص الأصلي الثابت
+//
+//        // 4. إعداد العداد التدريجي بدون أصفار إضافية (%d)
+//        currentAnimator = android.animation.ValueAnimator.ofInt(fromValue, toValue).apply {
+//            duration = 1000L // مدة العد الكاملة (ثانية واحدة)
+//            interpolator = android.view.animation.LinearInterpolator()
+//
+//            addUpdateListener { animation ->
+//                val animatedValue = animation.animatedValue as Int
+//                // تحديث الرقم تدريجياً بنفس تنسيق %d
+//                textView.text = String.format(java.util.Locale.ENGLISH, "%d", animatedValue)
+//            }
+//        }
+//
+//        // 5. حركة التكبير وتغيير اللون أثناء العد
+//        textView.setTextColor(activeColor)
+//        textView.animate()
+//            .scaleX(1.2f)
+//            .scaleY(1.2f)
+//            .setDuration(300)
+//            .withEndAction {
+//                textView.animate()
+//                    .scaleX(1.0f)
+//                    .scaleY(1.0f)
+//                    .setDuration(400)
+//                    .withEndAction {
+//                        textView.setTextColor(originalColor)
+//                    }
+//                    .start()
+//            }
+//            .start()
+//
+//        currentAnimator?.start()
+//    }
 
     private fun resetAllHintButtonsUI() {
         updateHideButtonState(false)

@@ -58,6 +58,16 @@
             android:textColor="#f35054"
             android:textSize="18sp"
             android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/scoreAnimText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:alpha="0"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:visibility="invisible" />
     </LinearLayout>
 
 </RelativeLayout>
