@@ -43,7 +43,7 @@ class QuizActivity : AppCompatActivity() {
     private lateinit var logoViewModel: LogoViewModel
     private lateinit var hintViewModel: HintViewModel
     private lateinit var logoHintViewModel: LogoHintViewModel
-
+    private var previousHintsCount: Int = -1
     private var currentLogoId: Int = 0
     private var currentLevelId: Int = 0
     private var currentLogo: LogoEntity? = null
@@ -51,6 +51,7 @@ class QuizActivity : AppCompatActivity() {
     private lateinit var lettersAdapter: LettersAdapter
     private val answerSlots = ArrayList<TextView?>()
     private val slotSourcePositions = HashMap<Int, Int>()
+    private var currentAnimator: android.animation.ValueAnimator? = null
 
     // 🟢 فصل متغيّري وضع الاختيار للتلميحين
     private var isSelectingSlotForLetterHint = false
@@ -105,10 +106,29 @@ class QuizActivity : AppCompatActivity() {
     private fun observeGameStates() {
 
 
-
+//
+//        lifecycleScope.launch {
+//            hintViewModel.currentHints.collect { hintsCount ->
+//                updateHeaderHintCounter(hintsCount)
+//            }
+//        }
         lifecycleScope.launch {
-            hintViewModel.currentHints.collect { hintsCount ->
-                updateHeaderHintCounter(hintsCount)
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                hintViewModel.currentHints.collect { hintsCount ->
+                    if (previousHintsCount == -1) {
+                        // المرة الأولى عند فتح الشاشة
+                        previousHintsCount = hintsCount
+                        binding.titleBar.findViewById<TextView>(R.id.scoreValue).text = String.format(java.util.Locale.ENGLISH, "%d", hintsCount)
+                    } else if (previousHintsCount != hintsCount) {
+                        // تشغيل العداد التدريجي
+                        animateScoreCounter(
+                            textView = binding.titleBar.findViewById(R.id.scoreValue),
+                            fromValue = previousHintsCount,
+                            toValue = hintsCount
+                        )
+                        previousHintsCount = hintsCount
+                    }
+                }
             }
         }
 
@@ -181,6 +201,55 @@ class QuizActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+
+    private fun animateScoreCounter(textView: TextView, fromValue: Int, toValue: Int) {
+        // 1. إذا كانت القيمة القديمة تساوي الجديدة، اعرض الرقم مباشرة بدقة بدون أصفار
+        if (fromValue == toValue) {
+            textView.text = String.format(java.util.Locale.ENGLISH, "%d", toValue)
+            return
+        }
+
+        // 2. إلغاء أي أنيميشن قائم حالياً لمنع التداخل عند الضغط السريع
+        currentAnimator?.cancel()
+
+        // 3. تحديد ألوان الحركة
+        val isIncreasing = toValue > fromValue
+        val activeColor = if (isIncreasing) Color.GREEN else Color.RED
+        val originalColor = Color.parseColor("#f35054") // لون النص الأصلي الثابت
+
+        // 4. إعداد العداد التدريجي بدون أصفار إضافية (%d)
+        currentAnimator = android.animation.ValueAnimator.ofInt(fromValue, toValue).apply {
+            duration = 1000L // مدة العد الكاملة (ثانية واحدة)
+            interpolator = android.view.animation.LinearInterpolator()
+
+            addUpdateListener { animation ->
+                val animatedValue = animation.animatedValue as Int
+                // تحديث الرقم تدريجياً بنفس تنسيق %d
+                textView.text = String.format(java.util.Locale.ENGLISH, "%d", animatedValue)
+            }
+        }
+
+        // 5. حركة التكبير وتغيير اللون أثناء العد
+        textView.setTextColor(activeColor)
+        textView.animate()
+            .scaleX(1.2f)
+            .scaleY(1.2f)
+            .setDuration(300)
+            .withEndAction {
+                textView.animate()
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(400)
+                    .withEndAction {
+                        textView.setTextColor(originalColor)
+                    }
+                    .start()
+            }
+            .start()
+
+        currentAnimator?.start()
     }
 
     private fun resetAllHintButtonsUI() {
